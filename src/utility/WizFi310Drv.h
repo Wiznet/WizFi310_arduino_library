@@ -95,8 +95,8 @@ public:
 private:
     static void   wifiDriverInit   (Stream *wizfiSerial);
     static void   reset            ();
-    static bool   wifiConnect      (char *ssid, const char *passphrase);
-    static bool   wifiStartAP      (char *ssid, const char *pwd, uint8_t channel, uint8_t encry);
+    static bool   wifiConnect      (const char *ssid, const char *passphrase);
+    static bool   wifiStartAP      (const char *ssid, const char *pwd, uint8_t channel, uint8_t encry);
     static int8_t disconnect       ();
 
     static void   config   (IPAddress ip, IPAddress subnet, IPAddress gw);
@@ -156,8 +156,9 @@ private:
 public:
     static int  sendCmd         (const __FlashStringHelper* cmd, int timeout=1000);
     static int  sendCmd         (const __FlashStringHelper* cmd, int timeout, ...);
-    static bool sendCmdGet      (const __FlashStringHelper* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt);
+    static bool sendCmdGet      (const char* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt);
     static bool sendCmdGet      (const __FlashStringHelper* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
+    static bool sendCmdGet		(const char* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
 
     static int  readUntil     (int timeout, const char* tag=NULL, bool findTags=true);
     static void wizfiEmptyBuf (bool warn=true);

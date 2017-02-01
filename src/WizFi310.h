@@ -42,7 +42,8 @@ public:
     static void init(Stream *espSerial);
     static char* firmwareVersion();
     
-    static int   begin    (char *ssid, const char *passphrase);
+    static int   begin    (const char *ssid, const char *passphrase);
+    static int   begin    (const char *ssid);
     static int   beginAP  (char *ssid, uint8_t channel, const char *pwd, uint8_t encry);
     static int   beginAP  (char *ssid);
     static int   beginAP  (char *ssid, uint8_t channel);

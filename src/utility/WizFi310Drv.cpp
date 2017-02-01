@@ -94,17 +94,16 @@ void WizFi310Drv::wifiDriverInit(Stream *wizfiSerial)
         }
         delay(1000);
     }
-    sendCmd(F("AT+MRESET\r"));
-    for(int i=0; i<5; i++)
-    {
-        if (sendCmd(F("AT\r")) == TAG_OK)
-        {
-            initOK = true;
-            break;
-        }
-        delay(1000);
-    }
-
+//    sendCmd(F("AT+MRESET\r"));
+//    for(int i=0; i<5; i++)
+//    {
+//        if (sendCmd(F("AT\r")) == TAG_OK)
+//        {
+//            initOK = true;
+//            break;
+//        }
+//        delay(1000);
+//    }
 
     if (!initOK)
     {
@@ -125,7 +124,7 @@ void WizFi310Drv::reset()
 
 }
 
-bool WizFi310Drv::wifiConnect(char*ssid, const char *passphrase)
+bool WizFi310Drv::wifiConnect(const char*ssid, const char *passphrase)
 {
     LOGDEBUG(F("> wifiConnect"));
 
@@ -145,7 +144,7 @@ bool WizFi310Drv::wifiConnect(char*ssid, const char *passphrase)
     return true;
 }
 
-bool WizFi310Drv::wifiStartAP(char *ssid, const char *pwd, uint8_t channel, uint8_t encry)
+bool WizFi310Drv::wifiStartAP(const char *ssid, const char *pwd, uint8_t channel, uint8_t encry)
 {
     LOGDEBUG(F("> wifiStartAP"));
     char ch_enc[5]={0,};
@@ -432,7 +431,7 @@ bool WizFi310Drv::startUdpServer(uint8_t sock, uint16_t port)
 
     sendCmd(F("AT\r"));
     sprintf_P(cmdBuf, PSTR("AT+SCON=O,USN,,,%d,0\r"), port);
-    ret = sendCmdGet(F(cmdBuf), F("[CONNECT "),F("]\r\n"), buff, sizeof(buff),2);
+    ret = sendCmdGet(cmdBuf, F("[CONNECT "),F("]\r\n"), buff, sizeof(buff),2);
     if( (buff[0] - '0') != sock )
     {
         sendCmd(F("AT+SMGMT=ALL\r"));
@@ -461,7 +460,7 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
     else
     {
         sprintf_P(cmdBuf, PSTR("AT+FDNS=%s,%d\r"),host,3000);
-        if(sendCmdGet(F(cmdBuf),F(NULL),F("\r\n"),buff,sizeof(buff),1))
+        if(sendCmdGet(cmdBuf,F(""),F("\r\n"),buff,sizeof(buff),1))
         {
             strncpy(host_ip,buff,sizeof(host_ip));
         }
@@ -484,7 +483,7 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
         sprintf_P(cmdBuf, PSTR("AT+SCON=O,UCN,%s,%d,%d,0\r"),host_ip,port,_localPort);
     }
 
-    ret = sendCmdGet(F(cmdBuf),F("[CONNECT "),F("]\r\n"),buff,sizeof(buff),2);
+    ret = sendCmdGet(cmdBuf,F("[CONNECT "),F("]\r\n"),buff,sizeof(buff),2);
     if( (buff[0] - '0') != sock )
     {
         sendCmd(F("AT+SMGMT=ALL\r"));
@@ -612,32 +611,32 @@ bool WizFi310Drv::getData(uint8_t connId, uint8_t *data, bool peek, bool* connCl
             if (peek)
             {
                 *data = (char)WizFi310Serial->peek();
+                return true;
+            }
+
+            if(_bufPos <= 0)
+            {
+                uint8_t ch = WizFi310Serial->read();
+                if(ch == '[')
+                {
+                    char msg[20];
+                    sprintf_P(msg, PSTR("DISCONNECT %d]"), connId);
+                    //WizFi310Serial->find((char*)"DISCONNECT ");
+                    if( WizFi310Serial->find((char*)msg) )
+                    {
+                        //LOGDEBUG();
+                        //LOGDEBUG(F("Connection closed"));
+                        *connClose=true;
+                    }
+                }
+                return false;
             }
             else
             {
-                if(_bufPos <= 0)
-                {
-                    uint8_t ch = WizFi310Serial->read();
-                    if(ch == '[')
-                    {
-                        char msg[20];
-                        sprintf_P(msg, PSTR("DISCONNECT %d]"), connId); 
-                        //WizFi310Serial->find((char*)"DISCONNECT ");
-                        if( WizFi310Serial->find((char*)msg) )
-                        {
-                            //LOGDEBUG();
-                            //LOGDEBUG(F("Connection closed"));
-                            *connClose=true;
-                        }
-                    }
-                }
-                else
-                {
-                    *data = (char)WizFi310Serial->read();
-                    _bufPos--;
-                }
+                *data = (char)WizFi310Serial->read();
+                _bufPos--;
+                return true;
             }
-            return true;
         }
     } while(millis() - _startMillis < 2000);
 
@@ -788,7 +787,7 @@ int WizFi310Drv::sendCmd(const __FlashStringHelper* cmd, int timeout, ...)
     return idx;
 }
 
-bool WizFi310Drv::sendCmdGet(const __FlashStringHelper* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt)
+bool WizFi310Drv::sendCmdGet(const char* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt)
 {
     int idx;
     bool ret = false;
@@ -859,7 +858,7 @@ bool WizFi310Drv::sendCmdGet(const __FlashStringHelper* cmd, const char* startTa
     }
     else
     {
-// the command has returned but no tag is found
+        // the command has returned but no tag is found
         LOGWARN(F("No tag found"));
     }
 
@@ -870,6 +869,20 @@ bool WizFi310Drv::sendCmdGet(const __FlashStringHelper* cmd, const char* startTa
 }
 
 bool WizFi310Drv::sendCmdGet(const __FlashStringHelper* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt)
+{
+    char _startTag[strlen_P((char*)startTag)+1];
+    strcpy_P(_startTag,  (char*)startTag);
+
+    char _endTag[strlen_P((char*)endTag)+1];
+    strcpy_P(_endTag,  (char*)endTag);
+
+    char _cmd[strlen_P((char*)cmd)+1];
+    strcpy_P(_cmd, (char*)cmd);
+
+    return sendCmdGet(_cmd, _startTag, _endTag, outStr, outStrLen, opt);
+}
+
+bool WizFi310Drv::sendCmdGet(const char* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt)
 {
     char _startTag[strlen_P((char*)startTag)+1];
     strcpy_P(_startTag,  (char*)startTag);

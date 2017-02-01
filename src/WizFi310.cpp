@@ -20,10 +20,19 @@ char* WizFi310Class::firmwareVersion()
     return WizFi310Drv::getFwVersion();
 }
 
-int WizFi310Class::begin(char *ssid, const char *passphrase)
+int WizFi310Class::begin(const char *ssid, const char *passphrase)
 {
     wizfiMode = 1;
     if ( WizFi310Drv::wifiConnect(ssid, passphrase) )
+        return WL_CONNECTED;
+
+    return WL_CONNECT_FAILED;
+}
+
+int WizFi310Class::begin(const char *ssid)
+{
+    wizfiMode = 1;
+    if ( WizFi310Drv::wifiConnect(ssid, "") )
         return WL_CONNECTED;
 
     return WL_CONNECT_FAILED;

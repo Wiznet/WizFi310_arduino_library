@@ -110,7 +110,8 @@ int WiFiClient::read()
         return -1;
 
     bool connClose = false;
-    WizFi310Drv::getData(_sock, &b, false, &connClose);
+    if( WizFi310Drv::getData(_sock, &b, false, &connClose) == false )
+    	return -1;
 
     if (connClose)
     {
