@@ -45,7 +45,7 @@ int WiFiClient::connect(const char* host, uint16_t port, uint8_t protMode)
 {
     LOGINFO1(F("Connecting to"), host);
 
-    _sock = getFirstSocket();
+    _sock = WizFi310Drv::getFirstSocket();
 
     if (_sock != NO_SOCKET_AVAIL)
     {
@@ -92,7 +92,7 @@ int WiFiClient::available()
 {
     if (_sock != 255)
     {
-        int bytes = WizFi310Drv::availData(_sock);
+        int bytes = WizFi310Drv::availData();
         if (bytes > 0)
         {
             return bytes;
@@ -184,7 +184,7 @@ uint8_t WiFiClient::status()
         return CLOSED;
     }
 
-    if (WizFi310Drv::availData(_sock))
+    if (WizFi310Drv::availData())
     {
         return ESTABLISHED;
     }
@@ -211,17 +211,6 @@ IPAddress WiFiClient::remoteIP()
 // Private Methods
 ////////////////////////////////////////////////////////////////////////////////
 
-uint8_t WiFiClient::getFirstSocket()
-{
-    for (int i = 0; i < MAX_SOCK_NUM; i++)
-    {
-      if (WizFi310Drv::_state[i] == NA_STATE)
-      {
-          return i;
-      }
-    }
-    return SOCK_NOT_AVAIL;
-}
 
 size_t WiFiClient::printFSH(const __FlashStringHelper *ifsh, bool appendCrLf)
 {

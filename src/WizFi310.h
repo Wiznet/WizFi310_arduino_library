@@ -50,6 +50,7 @@ public:
     
     static void  config   (IPAddress ip, IPAddress subnet, IPAddress gw);
     static void  config   ();
+    static void  configAP (IPAddress ip);
     static int   disconnect ();
 
     static String   macAddress (void);

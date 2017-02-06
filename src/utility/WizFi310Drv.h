@@ -28,7 +28,7 @@ along with The Arduino WiFiEsp library.  If not, see
 
 typedef enum eProtMode {TCP_MODE, UDP_MODE, SSL_MODE} tProtMode;
 typedef enum ESC_State {ESC_IDLE, ESC_CID, ESC_PEERIP, ESC_PEERPORT, ESC_LENGTH,
-                        ESC_RECV_DATA, ESC_EVENT, ESC_EVENT_DISCONNECT, ESC_EVENT_LINKDOWN} tESC_State;
+                        ESC_RECV_DATA, ESC_EVENT, ESC_EVENT_DISCONNECT, ESC_EVENT_LINKDOWN, ESC_EVENT_CONNECT_CLIENT} tESC_State;
 
 typedef enum {
         WL_FAILURE = -1,
@@ -116,7 +116,7 @@ private:
     static bool    getClientState      (uint8_t sock);
     static char*   getFwVersion        ();
 
-    static bool startServer    (uint16_t port);
+    static uint8_t startServer    (uint16_t port);
     static bool startUdpServer (uint8_t sock, uint16_t port);
     static bool startClient (const char* host, uint16_t port, uint8_t sock, uint8_t protMode);
     static void stopClient  (uint8_t sock);
@@ -126,7 +126,7 @@ private:
     ////////////////////////////////////////////////////////////////////////////
     // TCP/IP functions
     ////////////////////////////////////////////////////////////////////////////
-    static uint16_t availData  (uint8_t connId);
+    static uint16_t availData  ();
     static void     parsingData(uint8_t recv_data);
     static bool     getData    (uint8_t connId, uint8_t *data, bool peek, bool* connClose);
     static int      getDataBuf (uint8_t connId, uint8_t *buf, uint16_t bufSize);
@@ -135,6 +135,7 @@ private:
     
     static void     getRemoteIpAddress (IPAddress& ip);
     static uint16_t getRemotePort();
+    static uint8_t  getFirstSocket();
 
     static Stream *WizFi310Serial;
 
@@ -142,7 +143,6 @@ private:
     static uint8_t _connId;
 
     static uint16_t _remotePort;
-    static uint8_t  _remoteIp[WL_IPV4_LENGTH];
 
     // firmware version string
     static char     fwVersion[WL_FW_VER_LENGTH];
@@ -173,7 +173,7 @@ private:
 
     static uint16_t m_esc_state;
     static int      m_recved_len;
-//    static bool     m_is_connected[8];
+    static uint8_t  m_client_sock;
 
 
     static uint16_t _localPort;

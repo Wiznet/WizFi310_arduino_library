@@ -1,8 +1,5 @@
 #include "WizFi310.h"
 
-
-//uint16_t    WizFi310Class::_server_port[MAX_SOCK_NUM] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
 WizFi310Class::WizFi310Class()
 {
 }
@@ -54,6 +51,14 @@ int WizFi310Class::beginAP(char *ssid, uint8_t channel)
 
 void WizFi310Class::config(IPAddress ip, IPAddress subnet, IPAddress gw) 
 {
+    WizFi310Drv::config(ip, subnet, gw);
+}
+
+void WizFi310Class::configAP(IPAddress ip)
+{
+    IPAddress subnet(255,255,255,0);
+    IPAddress gw = ip;
+
     WizFi310Drv::config(ip, subnet, gw);
 }
 

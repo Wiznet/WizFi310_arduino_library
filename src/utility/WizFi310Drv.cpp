@@ -41,7 +41,8 @@ typedef enum
 const char* WIZFI310EVNT[]=
 {
     "[DISCONNECT ",
-    "[Link-Down Event]\r\n"
+    "[Link-Down Event]\r\n",
+    "[CONNECT "
 };
 
 char WizFi310Drv::fwVersion[]    = {0};
@@ -54,12 +55,12 @@ uint8_t WizFi310Drv::_remoteIP[] = {0};
 long     WizFi310Drv::_bufPos=0;
 uint8_t  WizFi310Drv::_connId=0;
 uint16_t WizFi310Drv::_remotePort = 0;
-uint8_t  WizFi310Drv::_remoteIp[] = {0};
 
 uint16_t WizFi310Drv::_localPort = 5000;
 
 uint16_t WizFi310Drv::m_esc_state = ESC_IDLE;
 int      WizFi310Drv::m_recved_len = 0;
+uint8_t  WizFi310Drv::m_client_sock = 255;
 
 
 bool WizFi310Drv::m_use_dhcp=true;
@@ -111,14 +112,14 @@ bool WizFi310Drv::wifiConnect(const char*ssid, const char *passphrase)
 {
     LOGDEBUG(F("> wifiConnect"));
 
-    if( sendCmd(F("AT+WLEAVE\r"),1000 ) == -1 )                 return false;
-    if( sendCmd(F("AT+WSET=0,%s\r"),1000, ssid) == -1 )         return false;
-    if( sendCmd(F("AT+WSEC=0,,%s\r"),1000, passphrase) == -1 )  return false;
+    if( sendCmd(F("AT+WLEAVE\r"),1000 ) == TAG_ERROR )                 return false;
+    if( sendCmd(F("AT+WSET=0,%s\r"),1000, ssid) == TAG_ERROR )         return false;
+    if( sendCmd(F("AT+WSEC=0,,%s\r"),1000, passphrase) == TAG_ERROR )  return false;
     if( m_use_dhcp )
     {
-        if( sendCmd(F("AT+WNET=1\r"), 1000) == -1 ) return false;
+        if( sendCmd(F("AT+WNET=1\r"), 1000) == TAG_ERROR ) return false;
     }
-    if( sendCmd(F("AT+WJOIN\r"),30000 ) == -1 ) return false;
+    if( sendCmd(F("AT+WJOIN\r"),30000 ) == TAG_ERROR ) return false;
 
     LOGINFO1(F("Connected to"), ssid);
     return true;
@@ -136,9 +137,9 @@ bool WizFi310Drv::wifiStartAP(const char *ssid, const char *pwd, uint8_t channel
     else if ( encry == WIZ_TYPE_WPA2_TKIP ) strcpy(ch_enc,"WPA2TKIP");
     else if ( encry == WIZ_TYPE_WPA2_MIXED) strcpy(ch_enc,"WPA2");
 
-    if( sendCmd(F("AT+WSET=1,%s\r"),1000, ssid) == -1 )             return false;
-    if( sendCmd(F("AT+WSEC=1,%s,%s\r"),1000, ch_enc,pwd) == -1 )    return false;
-    if( sendCmd(F("AT+WJOIN\r"),10000 ) == -1 )                     return false;
+    if( sendCmd(F("AT+WSET=1,%s\r"),1000, ssid) == TAG_ERROR )             return false;
+    if( sendCmd(F("AT+WSEC=1,%s,%s\r"),1000, ch_enc,pwd) == TAG_ERROR )    return false;
+    if( sendCmd(F("AT+WJOIN\r"),10000 ) == TAG_ERROR )                     return false;
 
     LOGINFO1(F("Access point started"), ssid);
     return true;
@@ -150,10 +151,25 @@ int8_t WizFi310Drv::disconnect()
 
 void WizFi310Drv::config(IPAddress ip, IPAddress subnet, IPAddress gw)
 {
+    LOGDEBUG(F("> config(IP,Subnet,Gateway)"));
+    char buf_ip[16];
+    char buf_sub[16];
+    char buf_gw[16];
+
+    sprintf_P(buf_ip, PSTR("%d.%d.%d.%d"),ip[0], ip[1], ip[2], ip[3] );
+    sprintf_P(buf_sub, PSTR("%d.%d.%d.%d"), subnet[0], subnet[1], subnet[2], subnet[3] );
+    sprintf_P(buf_gw, PSTR("%d.%d.%d.%d"), gw[0], gw[1], gw[2], gw[3] );
+
+    if( sendCmd(F("AT+WNET=0,%s,%s,%s\r"), 1000, buf_ip, buf_sub, buf_gw) != TAG_ERROR)
+        m_use_dhcp = false;
 }
 
 void WizFi310Drv::config(void)
 {
+    LOGDEBUG(F("> config(DHCP)"));
+    if( sendCmd(F("AT+WNET=1\r"), 1000) != TAG_ERROR )
+        m_use_dhcp = true;
+
 }
 
 uint8_t* WizFi310Drv::getMacAddress()
@@ -340,7 +356,7 @@ uint8_t WizFi310Drv::getConnectionStatus()
 {
     char buff[CMD_BUFFER_SIZE];
 
-    if( sendCmd(F("AT+WSTATUS\r")) == -1 )
+    if( sendCmd(F("AT+WSTATUS\r")) == TAG_ERROR )
         return WL_NO_SHIELD;
 
     getResponse(buff, sizeof(buff), 2);
@@ -373,12 +389,47 @@ char* WizFi310Drv::getFwVersion()
 }
 
 // Start server TCP on port specified
-bool WizFi310Drv::startServer(uint16_t port)
+uint8_t WizFi310Drv::startServer(uint16_t port)
 {
+    int ret = 0;
+    uint8_t server_sock;
+
+    LOGDEBUG1(F("> startServer"), port);
+
+    for(int i=0; i<3; i++)
+    {
+        sendCmd(F("AT\r"));
+        ret = sendCmd(F("AT+SCON=O,TSN,,,%d,0\r"), 1000, port);
+        ringBuf.reset();
+
+        if( ret == TAG_OK )
+        {
+            server_sock = getFirstSocket();
+            WizFi310Drv::_state[server_sock] = server_sock;
+
+            m_client_sock = getFirstSocket();
+            return m_client_sock;
+        }
+    }
+    return SOCK_NOT_AVAIL;
 }
 
 bool WizFi310Drv::startUdpServer(uint8_t sock, uint16_t port)
 {
+    bool ret=false;
+    char resp_buf[15]="";
+    char buff[CMD_BUFFER_SIZE];
+
+    LOGDEBUG1(F("> start Udp Server"), port);
+
+    sendCmd(F("AT\r"));
+    sprintf_P(resp_buf, PSTR("[CONNECT %d]\r\n"), sock);
+    ret = SendCmdWithTag(F("AT+SCON=O,USN,,,%d,0\r"),(char*)"[OK]",resp_buf,10000,port);
+    ringBuf.reset();
+    if( ret  == TAG_ERROR )
+        return false;
+
+    return true;
 }
 
 
@@ -399,7 +450,7 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
     }
     else
     {
-        if( sendCmd(F("AT+FDNS=%s,%d\r"),10000,host,10000) == -1)
+        if( sendCmd(F("AT+FDNS=%s,%d\r"),10000,host,10000) == TAG_ERROR)
         {
 			return false;
         }
@@ -412,20 +463,17 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
 
     if(protMode == TCP_MODE)
     {
-//        sendCmd(F("AT+SMGMT=ALL\r"));
         status = SendCmdWithTag(F("AT+SCON=O,TCN,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,port);
         ringBuf.reset();
     }
     else if(protMode == SSL_MODE)
     {
-//        sendCmd(F("AT+SMGMT=ALL\r"));
         status = SendCmdWithTag(F("AT+SCON=O,TCS,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,port);
         ringBuf.reset();
     }
     else if(protMode == UDP_MODE)
     {
-//        sendCmd(F("AT+SMGMT=ALL\r"));
-        status = SendCmdWithTag(F("AT+SCON=O,UCN,%s,%d,%d,0\r"),resp_ok,resp_con,10000,host_ip,port,_localPort);
+        status = SendCmdWithTag(F("AT+SCON=O,UCN,%s,%d,%d,0\r"),resp_ok,"",10000,host_ip,port,_localPort);
         ringBuf.reset();
     }
 
@@ -450,12 +498,21 @@ void WizFi310Drv::stopClient(uint8_t sock)
 	if( _state[sock] == sock && ringBuf.available() )
         return;
 
+    for(int i=0; i<5; i++)
+     {
+         if (sendCmd(F("AT\r"),1000) == TAG_OK)
+         {
+             break;
+         }
+         delay(100);
+     }
 
 	sprintf_P(cmdBuf, PSTR("AT+SMGMT=%d\r"),sock);
 	WizFi310Serial->print(cmdBuf);
     if( readUntil(1000) == TAG_OK )
     {
 		_state[sock] = NA_STATE;
+		m_esc_state = ESC_IDLE;
 		//m_is_server_run = false;
     }
 }
@@ -467,7 +524,7 @@ uint8_t WizFi310Drv::getServerState(uint8_t sock)
 ////////////////////////////////////////////////////////////////////////////
 // TCP/IP functions
 ////////////////////////////////////////////////////////////////////////////
-uint16_t WizFi310Drv::availData(uint8_t connId)
+uint16_t WizFi310Drv::availData()
 {
 	uint8_t recved_byte;
 
@@ -487,14 +544,15 @@ static uint8_t tmp_evnt_idx=0;
 
 void WizFi310Drv::parsingData(uint8_t recv_data)
 {
-	switch(m_esc_state)
+    //Serial.write(recv_data);
+    switch(m_esc_state)
     {
     case ESC_IDLE:
 		m_recved_len = 0;
         tempIP_idx = 0;
         if(recv_data == '{')
         {
-			m_esc_state = ESC_CID;
+            m_esc_state = ESC_CID;
         }
         else if(recv_data == '[')
         {
@@ -512,9 +570,15 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 			m_esc_state = ESC_EVENT_LINKDOWN;
 			tmp_evnt_idx = 2;
 		}
+		else if( recv_data == 'C')
+		{
+            m_esc_state = ESC_EVENT_CONNECT_CLIENT;
+            tmp_evnt_idx = 2;
+		}
 		else
 		{
-			m_esc_state = ESC_IDLE;
+		    m_esc_state = ESC_IDLE;
+			tmp_evnt_idx = 0;
 		}
 		break;
     case ESC_CID:
@@ -636,6 +700,34 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 			tmp_evnt_idx = 0;
 		}
 		break;
+    case ESC_EVENT_CONNECT_CLIENT:
+        if( tmp_evnt_idx == 9 && ( recv_data >= '0' && recv_data <= '8') )
+        {
+            if(m_client_sock == (recv_data - '0'))
+            {
+                _state[recv_data-'0'] = m_client_sock;
+                tmp_evnt_idx++;
+            }
+        }
+        else if( tmp_evnt_idx >= 10 && tmp_evnt_idx <= 12 )
+        {
+            if( tmp_evnt_idx == 12 )
+            {
+                m_esc_state = ESC_IDLE;
+                tmp_evnt_idx = 0;
+            }
+            tmp_evnt_idx++;
+        }
+        else if( (tmp_evnt_idx <= 8) && recv_data == WIZFI310EVNT[2][tmp_evnt_idx] )
+        {
+            tmp_evnt_idx++;
+        }
+        else
+        {
+            m_esc_state = ESC_IDLE;
+            tmp_evnt_idx = 0;
+        }
+        break;
     }
 }
 
@@ -680,13 +772,8 @@ int WizFi310Drv::getDataBuf(uint8_t connId, uint8_t *buf, uint16_t bufSize)
 		{
 			break;
 		}
-
-		//availData(connId);
     }
 
-//    Serial.println("=====");
-//    Serial.println(idx);
-//    Serial.println("=====");
     buf[idx] = '\0';
     return idx;
 }
@@ -730,13 +817,25 @@ bool WizFi310Drv::sendData(uint8_t sock, const __FlashStringHelper *data, uint16
 
 void WizFi310Drv::getRemoteIpAddress(IPAddress& ip)
 {
+    ip = _remoteIP;
 }
 
 uint16_t WizFi310Drv::getRemotePort()
 {
+    return _remotePort;
 }
 
-
+uint8_t WizFi310Drv::getFirstSocket()
+{
+    for (int i = 0; i < MAX_SOCK_NUM; i++)
+    {
+      if (_state[i] == NA_STATE)
+      {
+          return i;
+      }
+    }
+    return SOCK_NOT_AVAIL;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // Utility functions

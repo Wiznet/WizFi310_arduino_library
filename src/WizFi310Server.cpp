@@ -6,18 +6,21 @@
 
 WiFiServer::WiFiServer(uint16_t port)
 {
-	_port = port;
+    m_port = port;
+    m_client_sock = 255;
 }
 
 void WiFiServer::begin()
 {
 	LOGDEBUG(F("Starting server"));
 
-	_started = WizFi310Drv::startServer(_port);
+	m_client_sock = WizFi310Drv::startServer(m_port);
 
-	if (_started)
+	if (m_client_sock != SOCK_NOT_AVAIL)
 	{
-		LOGINFO1(F("Server started on port"), _port);
+	    m_started = true;
+	    LOGINFO1(F("Server started on port"), m_port);
+	    LOGINFO1(m_client_sock, F(" client will connect"));
 	}
 	else
 	{
@@ -27,15 +30,15 @@ void WiFiServer::begin()
 
 WiFiClient WiFiServer::available(byte* status)
 {
-	// TODO the original method seems to handle automatic server restart
+    uint8_t sock;
 
-	int bytes = WizFi310Drv::availData(0);
-	if (bytes>0)
-	{
-		LOGINFO1(F("New client"), WizFi310Drv::_connId);
-		WiFiClient client(WizFi310Drv::_connId);
-		return client;
-	}
+    WizFi310Drv::availData();
+    if( WizFi310Drv::_state[m_client_sock] != NA_STATE )
+    {
+        LOGINFO1(F("New client"), m_client_sock);
+        WiFiClient client(m_client_sock);
+        return client;
+    }
 
     return WiFiClient(255);
 }
@@ -58,9 +61,22 @@ size_t WiFiServer::write(const uint8_t *buffer, size_t size)
     {
         if (WizFi310Drv::_state[sock] != 0)
         {
-        	WiFiClient client(sock);
+            WiFiClient client(sock);
             n += client.write(buffer, size);
         }
     }
     return n;
+}
+
+
+uint8_t WiFiServer::getFirstSocket()
+{
+    for (int i = 0; i < MAX_SOCK_NUM; i++)
+    {
+      if (WizFi310Drv::_state[i] == NA_STATE)
+      {
+          return i;
+      }
+    }
+    return SOCK_NOT_AVAIL;
 }

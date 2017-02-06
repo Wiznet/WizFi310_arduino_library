@@ -10,7 +10,8 @@ private:
   uint8_t _sock;  // socket ID for Wiz5100
   uint16_t _port; // local port to listen on
   
-  
+  bool m_is_udp_server;
+
   uint16_t _remotePort;
   char _remoteHost[30];
   
@@ -71,8 +72,6 @@ public:
 
   // Return the port of the host who sent the current incoming packet
   virtual uint16_t remotePort();
-
-  uint8_t getFirstSocket();
 
 
   friend class WiFiServer;
