@@ -3,8 +3,6 @@
 
 //uint16_t    WizFi310Class::_server_port[MAX_SOCK_NUM] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-uint8_t WizFi310Class::wizfiMode = 0;
-
 WizFi310Class::WizFi310Class()
 {
 }
@@ -22,7 +20,6 @@ char* WizFi310Class::firmwareVersion()
 
 int WizFi310Class::begin(const char *ssid, const char *passphrase)
 {
-    wizfiMode = 1;
     if ( WizFi310Drv::wifiConnect(ssid, passphrase) )
         return WL_CONNECTED;
 
@@ -31,7 +28,6 @@ int WizFi310Class::begin(const char *ssid, const char *passphrase)
 
 int WizFi310Class::begin(const char *ssid)
 {
-    wizfiMode = 1;
     if ( WizFi310Drv::wifiConnect(ssid, "") )
         return WL_CONNECTED;
 

@@ -46,7 +46,6 @@ int WiFiClient::connect(const char* host, uint16_t port, uint8_t protMode)
     LOGINFO1(F("Connecting to"), host);
 
     _sock = getFirstSocket();
-    //_sock = 0;
 
     if (_sock != NO_SOCKET_AVAIL)
     {
@@ -94,24 +93,23 @@ int WiFiClient::available()
     if (_sock != 255)
     {
         int bytes = WizFi310Drv::availData(_sock);
-        if (bytes>0)
+        if (bytes > 0)
         {
             return bytes;
         }
     }
-
     return 0;
 }
 
 int WiFiClient::read()
 {
     uint8_t b;
-    if (!available())
-        return -1;
+//    if (!available())
+//        return -1;
 
     bool connClose = false;
     if( WizFi310Drv::getData(_sock, &b, false, &connClose) == false )
-    	return -1;
+        return -1;
 
     if (connClose)
     {
@@ -124,8 +122,8 @@ int WiFiClient::read()
 
 int WiFiClient::read(uint8_t* buf, size_t size)
 {
-    if (!available())
-        return -1;
+//    if (!available())
+//        return -1;
     return WizFi310Drv::getDataBuf(_sock, buf, size);
 }
 
@@ -191,7 +189,7 @@ uint8_t WiFiClient::status()
         return ESTABLISHED;
     }
 
-    if (WizFi310Drv::getClientState(_sock))
+    if (WizFi310Drv::getClientState(_sock) == true )
     {
         return ESTABLISHED;
     }
