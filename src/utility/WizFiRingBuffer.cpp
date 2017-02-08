@@ -31,7 +31,7 @@ int WizFiRingBuffer::reset()
 int WizFiRingBuffer::available(void)
 {
   //int ByteCount = (bufferSize + bufferHead - bufferTail) % bufferSize;
-  int ByteCount = (bufferHead - bufferTail);
+  int ByteCount = (bufferSize + bufferHead - bufferTail);
   while( ByteCount >= bufferSize )
   {
     ByteCount = ByteCount - bufferSize;

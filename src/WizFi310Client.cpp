@@ -104,8 +104,8 @@ int WiFiClient::available()
 int WiFiClient::read()
 {
     uint8_t b;
-//    if (!available())
-//        return -1;
+    if (!available())
+        return -1;
 
     bool connClose = false;
     if( WizFi310Drv::getData(_sock, &b, false, &connClose) == false )

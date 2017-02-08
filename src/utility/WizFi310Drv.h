@@ -127,6 +127,7 @@ private:
     // TCP/IP functions
     ////////////////////////////////////////////////////////////////////////////
     static uint16_t availData  ();
+    static uint16_t availUdpData();
     static void     parsingData(uint8_t recv_data);
     static bool     getData    (uint8_t connId, uint8_t *data, bool peek, bool* connClose);
     static int      getDataBuf (uint8_t connId, uint8_t *buf, uint16_t bufSize);

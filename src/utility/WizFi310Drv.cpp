@@ -537,6 +537,25 @@ uint16_t WizFi310Drv::availData()
 	return ringBuf.available();
 }
 
+uint16_t WizFi310Drv::availUdpData()
+{
+    uint8_t recved_byte;
+    while( ringBuf.available() <= (CMD_BUFFER_SIZE - 50) )
+    {
+        if( WizFi310Serial->available() )
+        {
+            recved_byte = (uint8_t)WizFi310Serial->read();
+            parsingData(recved_byte);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return ringBuf.available();
+}
+
 static uint8_t tempIP[18]={0,};
 static uint8_t tempIP_idx=0;
 static uint8_t tmp_evnt_idx=0;
@@ -548,7 +567,8 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
     switch(m_esc_state)
     {
     case ESC_IDLE:
-		m_recved_len = 0;
+//        LOGDEBUG("ESC_IDLE");
+        m_recved_len = 0;
         tempIP_idx = 0;
         if(recv_data == '{')
         {
@@ -560,6 +580,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         break;
     case ESC_EVENT:
+//        LOGDEBUG("ESC_EVENT");
 		if( recv_data == 'D')
 		{
 			m_esc_state = ESC_EVENT_DISCONNECT;
@@ -582,9 +603,10 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 		}
 		break;
     case ESC_CID:
+//        LOGDEBUG("ESC_CID");
         if( (recv_data >= '0') && (recv_data <= '9') )
         {
-
+            m_client_sock = recv_data - '0';
         }
         else if( recv_data == ',')
         {
@@ -596,6 +618,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         break;
     case ESC_PEERIP:
+//        LOGDEBUG("ESC_PEERIP");
         if( ((recv_data >= '0') && (recv_data <= '9')) || (recv_data == '.'))
         {
             tempIP[tempIP_idx++] = recv_data;
@@ -617,6 +640,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         break;
     case ESC_PEERPORT:
+//        LOGDEBUG("ESC_PEERPORT");
         if((recv_data >= '0') && (recv_data <= '9'))
         {
             _remotePort *= 10;
@@ -629,6 +653,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         else m_esc_state = ESC_IDLE;
         break;
     case ESC_LENGTH:
+//        LOGDEBUG("ESC_LENGTH");
         if((recv_data >= '0') && (recv_data <= '9'))
         {
 			m_recved_len *= 10;
@@ -641,6 +666,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         else m_esc_state = ESC_IDLE;
         break;
     case ESC_RECV_DATA:
+//        LOGDEBUG("ESC_RECV_DATA");
 //        if( ringBuf.available() >= (CMD_BUFFER_SIZE - 50) )
 //        {
 //			LOGDEBUG2("ringBuf threshold is over", (char)recv_data, ringBuf.available() );
