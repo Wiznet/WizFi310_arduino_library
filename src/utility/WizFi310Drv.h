@@ -127,7 +127,6 @@ private:
     // TCP/IP functions
     ////////////////////////////////////////////////////////////////////////////
     static uint16_t availData  ();
-    static uint16_t availUdpData();
     static void     parsingData(uint8_t recv_data);
     static bool     getData    (uint8_t connId, uint8_t *data, bool peek, bool* connClose);
     static int      getDataBuf (uint8_t connId, uint8_t *buf, uint16_t bufSize);
@@ -167,15 +166,12 @@ public:
     static int  readUntil     (int timeout, const char* tag="[OK]\r\n", const char* tag2="", const char* error="[ERROR]\r\n");
     static void wizfiEmptyBuf (bool warn=true);
 
-    static int timedRead();
-
 private:
     static bool m_use_dhcp;
 
     static uint16_t m_esc_state;
     static int      m_recved_len;
     static uint8_t  m_client_sock;
-
 
     static uint16_t _localPort;
     

@@ -73,6 +73,8 @@ public:
   // Return the port of the host who sent the current incoming packet
   virtual uint16_t remotePort();
 
+  int timedRead();
+  int timedAvailable();
 
   friend class WiFiServer;
 };

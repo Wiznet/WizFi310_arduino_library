@@ -452,7 +452,8 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
     {
         if( sendCmd(F("AT+FDNS=%s,%d\r"),10000,host,10000) == TAG_ERROR)
         {
-			return false;
+            ringBuf.reset();
+            return false;
         }
 
         getResponse(host_ip, sizeof(host_ip), 1);
@@ -531,30 +532,13 @@ uint16_t WizFi310Drv::availData()
 	if( WizFi310Serial->available() )
 	{
 		recved_byte = (uint8_t)WizFi310Serial->read();
+		if (recved_byte < 0) return ringBuf.available();
 		parsingData(recved_byte);
 	}
 
 	return ringBuf.available();
 }
 
-uint16_t WizFi310Drv::availUdpData()
-{
-    uint8_t recved_byte;
-    while( ringBuf.available() <= (CMD_BUFFER_SIZE - 50) )
-    {
-        if( WizFi310Serial->available() )
-        {
-            recved_byte = (uint8_t)WizFi310Serial->read();
-            parsingData(recved_byte);
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    return ringBuf.available();
-}
 
 static uint8_t tempIP[18]={0,};
 static uint8_t tempIP_idx=0;
@@ -945,6 +929,12 @@ int WizFi310Drv::readUntil(int timeout, const char* tag, const char* tag2, const
 	unsigned long start = millis();
     uint8_t  recved_byte, is_found1=0, is_found2=0;
 
+//    if( m_esc_state != ESC_IDLE )
+//    {
+//        LOGDEBUG2("readUnitl","m_esc_state",m_esc_state);
+//        Serial.println("\r\nTEST 200\r\n");
+//        return TAG_ERROR;
+//    }
 	while( (millis() - start < (unsigned long)timeout) and ret < 0 )
 	{
 		if( WizFi310Serial->available() )
@@ -1001,10 +991,6 @@ void WizFi310Drv::wizfiEmptyBuf(bool warn)
         LOGDEBUG(F(""));
         LOGDEBUG1(F("Dirty characters in the serial buffer! >"), i);
     }
-}
-
-int WizFi310Drv::timedRead()
-{
 }
 
 WizFi310Drv wizfi310Drv;

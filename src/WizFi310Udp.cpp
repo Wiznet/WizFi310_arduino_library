@@ -7,29 +7,14 @@
 /* Constructor */
 WiFiUDP::WiFiUDP() : _sock(NO_SOCKET_AVAIL)
 {
-    m_is_udp_server = false;
 }
 
 /* Start WiFiUDP socket, listening at local port PORT */
 
 uint8_t WiFiUDP::begin(uint16_t port)
 {
-    uint8_t sock = WizFi310Drv::getFirstSocket();
-    if (sock != NO_SOCKET_AVAIL)
-    {
-        if( WizFi310Drv::startUdpServer(sock, port) == true )
-        {
-//            WizFi310Class::_server_port[sock] = port;
-//            WizFi310Drv::_localPort = port;
-            m_is_udp_server = true;
-            _sock = sock;
-            _port = port;
-            return 1;
-        }
-    }
-
-    m_is_udp_server = false;
-    return 0;
+    _port = port;
+    return 1;
 }
 
 /* return number of bytes available in the current packet,
@@ -56,29 +41,43 @@ void WiFiUDP::stop()
 
       WizFi310Drv::stopClient(_sock);  
 	  _sock = NO_SOCKET_AVAIL;
+	  _remotePort = 0;
+	  _port = 0;
+	  WizFi310Drv::_state[_sock] = NA_STATE;
 }
 
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
 {
-    if (_sock == NO_SOCKET_AVAIL)
-    {
-      _sock = WizFi310Drv::getFirstSocket();
-    }
+    if (_sock != NO_SOCKET_AVAIL)
+        return 1;
+
+    _sock = WizFi310Drv::getFirstSocket();
+
     if (_sock != NO_SOCKET_AVAIL)
     {
-        if( m_is_udp_server == false)
+        if( strcmp(host,"0.0.0.0") == 0 )
         {
-            WizFi310Drv::startClient(host, port, _sock, UDP_MODE);
+            if( WizFi310Drv::startUdpServer(_sock, _port) == false )
+            {
+                return 0;
+            }
         }
-        _remotePort = port;
-        strcpy(_remoteHost, host);
+        else
+        {
+            if( WizFi310Drv::startClient(host, port, _sock, UDP_MODE) == false )
+            {
+                return 0;
+            }
+            _remotePort = port;
+        }
+
         WizFi310Drv::_state[_sock] = _sock;
+        strcpy(_remoteHost, host);
         return 1;
     }
 
     return 0;
 }
-
 
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 {
@@ -91,17 +90,21 @@ int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 
 int WiFiUDP::endPacket()
 {
-	return 1; //ServerDrv::sendUdpData(_sock);
+    timedAvailable();
+    return 1; //ServerDrv::sendUdpData(_sock);
 }
 
 size_t WiFiUDP::write(uint8_t byte)
 {
-  return write(&byte, 1);
+    if( available() > 0 )
+        return available();
+
+    return write(&byte, 1);
 }
 
 size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
 {
-    if( available() > 0 )
+    if( available() > 0 || WizFi310Drv::m_esc_state )
         return available();
 
     bool r = WizFi310Drv::sendData(_sock, buffer, size);
@@ -120,9 +123,9 @@ int WiFiUDP::parsePacket()
 
 int WiFiUDP::read()
 {
-	uint8_t b;
-//	if (!available())
-//		return -1;
+	uint8_t b=0;
+	if (!available())
+		return -1;
 
 	bool connClose = false;
 	WizFi310Drv::getData(_sock, &b, false, &connClose);
@@ -132,9 +135,16 @@ int WiFiUDP::read()
 
 int WiFiUDP::read(uint8_t* buf, size_t size)
 {
-//	if (!available())
-//		return -1;
-	return WizFi310Drv::getDataBuf(_sock, buf, size);
+    int i,c;
+
+    for(i=0;i<size;i++)
+    {
+        c = timedRead();
+        if( c < 0 ) return i;
+        buf[i] = (uint8_t)c;
+    }
+
+    return i;
 }
 
 int WiFiUDP::peek()
@@ -164,9 +174,30 @@ uint16_t  WiFiUDP::remotePort()
 	return WizFi310Drv::getRemotePort();
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Private Methods
 ////////////////////////////////////////////////////////////////////////////////
+int WiFiUDP::timedRead()
+{
+    int c;
+    unsigned long startMillis;
+
+    startMillis = millis();
+    do {
+      c = read();
+      if (c >= 0) return c;
+    } while(millis() - startMillis < 1000);
+    return -1;     // -1 indicates timeout
+}
+
+int WiFiUDP::timedAvailable()
+{
+    unsigned long startMillis;
+
+    startMillis = millis();
+    do {
+        available();
+    } while(millis() - startMillis < 1000);
+    return 1;
+}
 
