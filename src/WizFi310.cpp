@@ -1,10 +1,5 @@
 #include "WizFi310.h"
 
-
-//uint16_t    WizFi310Class::_server_port[MAX_SOCK_NUM] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-uint8_t WizFi310Class::wizfiMode = 0;
-
 WizFi310Class::WizFi310Class()
 {
 }
@@ -20,10 +15,17 @@ char* WizFi310Class::firmwareVersion()
     return WizFi310Drv::getFwVersion();
 }
 
-int WizFi310Class::begin(char *ssid, const char *passphrase)
+int WizFi310Class::begin(const char *ssid, const char *passphrase)
 {
-    wizfiMode = 1;
     if ( WizFi310Drv::wifiConnect(ssid, passphrase) )
+        return WL_CONNECTED;
+
+    return WL_CONNECT_FAILED;
+}
+
+int WizFi310Class::begin(const char *ssid)
+{
+    if ( WizFi310Drv::wifiConnect(ssid, "") )
         return WL_CONNECTED;
 
     return WL_CONNECT_FAILED;
@@ -49,6 +51,14 @@ int WizFi310Class::beginAP(char *ssid, uint8_t channel)
 
 void WizFi310Class::config(IPAddress ip, IPAddress subnet, IPAddress gw) 
 {
+    WizFi310Drv::config(ip, subnet, gw);
+}
+
+void WizFi310Class::configAP(IPAddress ip)
+{
+    IPAddress subnet(255,255,255,0);
+    IPAddress gw = ip;
+
     WizFi310Drv::config(ip, subnet, gw);
 }
 

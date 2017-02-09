@@ -31,13 +31,15 @@ public:
 
 	uint8_t status();
 
+	uint8_t getFirstSocket();
+
 	using Print::write;
 
 
 private:
-	uint16_t _port;
-	bool _started;
-
+	uint8_t  m_client_sock;
+	uint16_t m_port;
+	bool m_started;
 };
 
 #endif

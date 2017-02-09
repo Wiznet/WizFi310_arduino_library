@@ -27,7 +27,8 @@ along with The Arduino WiFiEsp library.  If not, see
 #include "debug.h"
 
 typedef enum eProtMode {TCP_MODE, UDP_MODE, SSL_MODE} tProtMode;
-
+typedef enum ESC_State {ESC_IDLE, ESC_CID, ESC_PEERIP, ESC_PEERPORT, ESC_LENGTH,
+                        ESC_RECV_DATA, ESC_EVENT, ESC_EVENT_DISCONNECT, ESC_EVENT_LINKDOWN, ESC_EVENT_CONNECT_CLIENT} tESC_State;
 
 typedef enum {
         WL_FAILURE = -1,
@@ -95,8 +96,8 @@ public:
 private:
     static void   wifiDriverInit   (Stream *wizfiSerial);
     static void   reset            ();
-    static bool   wifiConnect      (char *ssid, const char *passphrase);
-    static bool   wifiStartAP      (char *ssid, const char *pwd, uint8_t channel, uint8_t encry);
+    static bool   wifiConnect      (const char *ssid, const char *passphrase);
+    static bool   wifiStartAP      (const char *ssid, const char *pwd, uint8_t channel, uint8_t encry);
     static int8_t disconnect       ();
 
     static void   config   (IPAddress ip, IPAddress subnet, IPAddress gw);
@@ -112,10 +113,10 @@ private:
     static int32_t  getCurrentRSSI  ();
 
     static uint8_t getConnectionStatus ();
-    static uint8_t getClientState      (uint8_t sock);
+    static bool    getClientState      (uint8_t sock);
     static char*   getFwVersion        ();
 
-    static bool startServer    (uint16_t port);
+    static uint8_t startServer    (uint16_t port);
     static bool startUdpServer (uint8_t sock, uint16_t port);
     static bool startClient (const char* host, uint16_t port, uint8_t sock, uint8_t protMode);
     static void stopClient  (uint8_t sock);
@@ -125,7 +126,8 @@ private:
     ////////////////////////////////////////////////////////////////////////////
     // TCP/IP functions
     ////////////////////////////////////////////////////////////////////////////
-    static uint16_t availData  (uint8_t connId);
+    static uint16_t availData  ();
+    static void     parsingData(uint8_t recv_data);
     static bool     getData    (uint8_t connId, uint8_t *data, bool peek, bool* connClose);
     static int      getDataBuf (uint8_t connId, uint8_t *buf, uint16_t bufSize);
     static bool     sendData   (uint8_t sock, const uint8_t *data, uint16_t len);
@@ -133,6 +135,7 @@ private:
     
     static void     getRemoteIpAddress (IPAddress& ip);
     static uint16_t getRemotePort();
+    static uint8_t  getFirstSocket();
 
     static Stream *WizFi310Serial;
 
@@ -140,7 +143,6 @@ private:
     static uint8_t _connId;
 
     static uint16_t _remotePort;
-    static uint8_t  _remoteIp[WL_IPV4_LENGTH];
 
     // firmware version string
     static char     fwVersion[WL_FW_VER_LENGTH];
@@ -154,18 +156,22 @@ private:
     static WizFiRingBuffer ringBuf;
 
 public:
-    static int  sendCmd         (const __FlashStringHelper* cmd, int timeout=1000);
-    static int  sendCmd         (const __FlashStringHelper* cmd, int timeout, ...);
-    static bool sendCmdGet      (const __FlashStringHelper* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt);
+    static int  getResponse		(char* outStr, int outStrLen, int lineNum);
+    static int  sendCmd         (const __FlashStringHelper* cmd, int timeout=1000, ...);
+    static int  SendCmdWithTag  (const __FlashStringHelper* cmd, const char* tag="[OK]", const char* tag2="", int timeout=10000, ...);
+    static bool sendCmdGet      (const char* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt);
     static bool sendCmdGet      (const __FlashStringHelper* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
+    static bool sendCmdGet		(const char* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
 
-    static int  readUntil     (int timeout, const char* tag=NULL, bool findTags=true);
+    static int  readUntil     (int timeout, const char* tag="[OK]\r\n", const char* tag2="", const char* error="[ERROR]\r\n");
     static void wizfiEmptyBuf (bool warn=true);
-
-    static int timedRead();
 
 private:
     static bool m_use_dhcp;
+
+    static uint16_t m_esc_state;
+    static int      m_recved_len;
+    static uint8_t  m_client_sock;
 
     static uint16_t _localPort;
     

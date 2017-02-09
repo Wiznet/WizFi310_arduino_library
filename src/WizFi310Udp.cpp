@@ -5,27 +5,17 @@
 #include "utility/Debug.h"
 
 /* Constructor */
-WiFiUDP::WiFiUDP() : _sock(NO_SOCKET_AVAIL) {}
+WiFiUDP::WiFiUDP() : _sock(NO_SOCKET_AVAIL)
+{
+}
 
 /* Start WiFiUDP socket, listening at local port PORT */
 
 uint8_t WiFiUDP::begin(uint16_t port)
 {
-    uint8_t sock = getFirstSocket();
-    if (sock != NO_SOCKET_AVAIL)
-    {
-        //WizFi310Drv::startUdpServer(sock, port);
-        //WizFi310Class::_server_port[sock] = port;
-        WizFi310Drv::_localPort = port;
-        _sock = sock;
-        _port = port;
-        return 1;
-    }
-
-    return 0;
-
+    _port = port;
+    return 1;
 }
-
 
 /* return number of bytes available in the current packet,
    will return zero if parsePacket hasn't been called yet */
@@ -33,10 +23,10 @@ int WiFiUDP::available()
 {
 	 if (_sock != NO_SOCKET_AVAIL)
 	 {
-		int bytes = WizFi310Drv::availData(_sock);
+		int bytes = WizFi310Drv::availData();
 		if (bytes>0)
 		{
-			return bytes;
+		    return bytes;
 		}
 	}
 
@@ -47,30 +37,47 @@ int WiFiUDP::available()
 void WiFiUDP::stop()
 {
 	  if (_sock == NO_SOCKET_AVAIL)
-	    return;
+		return;
 
       WizFi310Drv::stopClient(_sock);  
 	  _sock = NO_SOCKET_AVAIL;
+	  _remotePort = 0;
+	  _port = 0;
+	  WizFi310Drv::_state[_sock] = NA_STATE;
 }
 
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
 {
-  if (_sock == NO_SOCKET_AVAIL)
-  {
-      _sock = getFirstSocket();
-  }
-  if (_sock != NO_SOCKET_AVAIL)
-  {
-      WizFi310Drv::startClient(host, port, _sock, UDP_MODE);
-      _remotePort = port;
-	  strcpy(_remoteHost, host);
-	  WizFi310Drv::_state[_sock] = _sock;
-	  return 1;
-  }
+    if (_sock != NO_SOCKET_AVAIL)
+        return 1;
 
-  return 0;
+    _sock = WizFi310Drv::getFirstSocket();
+
+    if (_sock != NO_SOCKET_AVAIL)
+    {
+        if( strcmp(host,"0.0.0.0") == 0 )
+        {
+            if( WizFi310Drv::startUdpServer(_sock, _port) == false )
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            if( WizFi310Drv::startClient(host, port, _sock, UDP_MODE) == false )
+            {
+                return 0;
+            }
+            _remotePort = port;
+        }
+
+        WizFi310Drv::_state[_sock] = _sock;
+        strcpy(_remoteHost, host);
+        return 1;
+    }
+
+    return 0;
 }
-
 
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 {
@@ -83,17 +90,23 @@ int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 
 int WiFiUDP::endPacket()
 {
-	return 1; //ServerDrv::sendUdpData(_sock);
+    timedAvailable();
+    return 1; //ServerDrv::sendUdpData(_sock);
 }
 
 size_t WiFiUDP::write(uint8_t byte)
 {
-  return write(&byte, 1);
+    if( available() > 0 )
+        return available();
+
+    return write(&byte, 1);
 }
 
 size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
 {
-	//bool r = EspDrv::sendDataUdp(_sock, _remoteHost, _remotePort, buffer, size);
+    if( available() > 0 || WizFi310Drv::m_esc_state )
+        return available();
+
     bool r = WizFi310Drv::sendData(_sock, buffer, size);
 	if (!r)
 	{
@@ -110,7 +123,7 @@ int WiFiUDP::parsePacket()
 
 int WiFiUDP::read()
 {
-	uint8_t b;
+	uint8_t b=0;
 	if (!available())
 		return -1;
 
@@ -122,9 +135,16 @@ int WiFiUDP::read()
 
 int WiFiUDP::read(uint8_t* buf, size_t size)
 {
-	if (!available())
-		return -1;
-	return WizFi310Drv::getDataBuf(_sock, buf, size);
+    int i,c;
+
+    for(i=0;i<size;i++)
+    {
+        c = timedRead();
+        if( c < 0 ) return i;
+        buf[i] = (uint8_t)c;
+    }
+
+    return i;
 }
 
 int WiFiUDP::peek()
@@ -154,23 +174,30 @@ uint16_t  WiFiUDP::remotePort()
 	return WizFi310Drv::getRemotePort();
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Private Methods
 ////////////////////////////////////////////////////////////////////////////////
-
-// TODO remove duplication with WiFiEspClient::getFirstSocket()
-
-uint8_t WiFiUDP::getFirstSocket()
+int WiFiUDP::timedRead()
 {
-    for (int i = 0; i < MAX_SOCK_NUM; i++)
-	{
-      if (WizFi310Drv::_state[i] == NA_STATE)
-      {
-          return i;
-      }
-    }
-    return SOCK_NOT_AVAIL;
+    int c;
+    unsigned long startMillis;
+
+    startMillis = millis();
+    do {
+      c = read();
+      if (c >= 0) return c;
+    } while(millis() - startMillis < 1000);
+    return -1;     // -1 indicates timeout
+}
+
+int WiFiUDP::timedAvailable()
+{
+    unsigned long startMillis;
+
+    startMillis = millis();
+    do {
+        available();
+    } while(millis() - startMillis < 1000);
+    return 1;
 }
 

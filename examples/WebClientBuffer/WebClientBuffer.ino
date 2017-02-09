@@ -35,12 +35,12 @@ void setup()
 
     // you're connected now, so print out the data
     Serial.println("You're connected to the network");
-    
+
     printWifiStatus();
-    
+
     Serial.println();
     Serial.println("Starting connection to server...");
-    
+
     // if you get a connection, report back via serial
     if (client.connect(server, 80)) {
         Serial.println("Connected to server");
@@ -52,41 +52,48 @@ void setup()
     }
 }
 
+
 void loop()
 {
-    // if there are incoming bytes available
-    // from the server, read them and print them
-    while (client.available()) {
-        char c = client.read();
-        Serial.write(c);
-    }
+	char test_buff[200];
+	// if there are incoming bytes available
+	// from the server, read them and print them
+	while (client.available()) {
+		if( client.read((uint8_t*)test_buff,sizeof(test_buff)-1) >= 0)
+		{
+			Serial.print(test_buff);
+		}
+	}
 
-    // if the server's disconnected, stop the client
-    if (!client.connected()) {
-    Serial.println();
-    Serial.println("Disconnecting from server...");
-    client.stop();
+	// if the server's disconnected, stop the client
+	if (!client.connected()) {
+	Serial.println();
+	Serial.println("Disconnecting from server...");
+	client.stop();
 
-    // do nothing forevermore
-        while (true);
-    }
+	// do nothing forevermore
+	while (true);
+	}
 }
 
 void printWifiStatus()
 {
-    // print the SSID of the network you're attached to
-    Serial.print("SSID: ");
-    Serial.println(WiFi.SSID());
-    
-    // print your WiFi shield's IP address
-    IPAddress ip = WiFi.localIP();
-    Serial.print("IP Address: ");
-    Serial.println(ip);
-    
-    // print the received signal strength
-    long rssi = WiFi.RSSI();
-    Serial.print("Signal strength (RSSI):");
-    Serial.print(rssi);
-    Serial.println(" dBm");
+	// print the SSID of the network you're attached to
+	Serial.print("SSID: ");
+	Serial.println(WiFi.SSID());
+
+	// print your WiFi shield's IP address
+	IPAddress ip = WiFi.localIP();
+	Serial.print("IP Address: ");
+	Serial.println(ip);
+
+	// print the received signal strength
+	long rssi = WiFi.RSSI();
+	Serial.print("Signal strength (RSSI):");
+	Serial.print(rssi);
+	Serial.println(" dBm");
 }
+
+
+
 
