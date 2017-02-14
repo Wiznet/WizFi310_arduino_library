@@ -34,29 +34,29 @@ uint8_t WiFiUDP::begin(uint16_t port)
    will return zero if parsePacket hasn't been called yet */
 int WiFiUDP::available()
 {
-	 if (_sock != NO_SOCKET_AVAIL)
-	 {
-		int bytes = WizFi310Drv::availData();
-		if (bytes>0)
-		{
-		    return bytes;
-		}
-	}
+     if (_sock != NO_SOCKET_AVAIL)
+     {
+        int bytes = WizFi310Drv::availData();
+        if (bytes>0)
+        {
+            return bytes;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 /* Release any resources being used by this WiFiUDP instance */
 void WiFiUDP::stop()
 {
-	  if (_sock == NO_SOCKET_AVAIL)
-		return;
+      if (_sock == NO_SOCKET_AVAIL)
+        return;
 
       WizFi310Drv::stopClient(_sock);  
       WizFi310Drv::_state[_sock] = NA_STATE;
-	  _sock = NO_SOCKET_AVAIL;
-	  _remotePort = 0;
-	  _port = 0;
+      _sock = NO_SOCKET_AVAIL;
+      _remotePort = 0;
+      _port = 0;
 }
 
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
@@ -86,10 +86,10 @@ int WiFiUDP::beginPacket(const char *host, uint16_t port)
 
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
 {
-	char s[18];
-	sprintf(s, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    char s[18];
+    sprintf(s, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 
-	return beginPacket(s, port);
+    return beginPacket(s, port);
 }
 
 
@@ -113,29 +113,29 @@ size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
         return available();
 
     bool r = WizFi310Drv::sendData(_sock, buffer, size);
-	if (!r)
-	{
+    if (!r)
+    {
         return 0;
-	}
+    }
 
-	return size;
+    return size;
 }
 
 int WiFiUDP::parsePacket()
 {
-	return available();
+    return available();
 }
 
 int WiFiUDP::read()
 {
-	uint8_t b=0;
-	if (!available())
-		return -1;
+    uint8_t b=0;
+    if (!available())
+        return -1;
 
-	bool connClose = false;
-	WizFi310Drv::getData(_sock, &b, false, &connClose);
+    bool connClose = false;
+    WizFi310Drv::getData(_sock, &b, false, &connClose);
 
-	return b;
+    return b;
 }
 
 int WiFiUDP::read(uint8_t* buf, size_t size)
@@ -169,14 +169,14 @@ void WiFiUDP::flush()
 
 IPAddress  WiFiUDP::remoteIP()
 {
-	IPAddress ret;
-	WizFi310Drv::getRemoteIpAddress(ret);
-	return ret;
+    IPAddress ret;
+    WizFi310Drv::getRemoteIpAddress(ret);
+    return ret;
 }
 
 uint16_t  WiFiUDP::remotePort()
 {
-	return WizFi310Drv::getRemotePort();
+    return WizFi310Drv::getRemotePort();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

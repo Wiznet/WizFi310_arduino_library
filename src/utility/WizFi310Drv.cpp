@@ -480,12 +480,12 @@ bool WizFi310Drv::startClient(const char* host, uint16_t remote_port, uint8_t so
 
     if( status == 0 )
     {
-		_state[sock] = sock;
+        _state[sock] = sock;
         ret = true;
     }
     else
     {
-		_state[sock] = NA_STATE;
+        _state[sock] = NA_STATE;
         ret = false;
     }
 
@@ -498,7 +498,7 @@ void WizFi310Drv::stopClient(uint8_t sock)
     char resp_1[20];
     bool ret=false;
 
-	if( _state[sock] == sock && ringBuf.available() )
+    if( _state[sock] == sock && ringBuf.available() )
         return;
 
     for(int i=0; i<5; i++)
@@ -510,16 +510,16 @@ void WizFi310Drv::stopClient(uint8_t sock)
          delay(100);
      }
 
-	sprintf_P(cmdBuf, PSTR("AT+SMGMT=%d\r"),sock);
-	LOGDEBUG(cmdBuf);
+    sprintf_P(cmdBuf, PSTR("AT+SMGMT=%d\r"),sock);
+    LOGDEBUG(cmdBuf);
 
-	sprintf_P(resp_1, PSTR("[DISCONNECT %d]\r\n"),sock);
-	if( SendCmdWithTag(cmdBuf,"[OK]\r\n",resp_1) == true )
-	{
+    sprintf_P(resp_1, PSTR("[DISCONNECT %d]\r\n"),sock);
+    if( SendCmdWithTag(cmdBuf,"[OK]\r\n",resp_1) == true )
+    {
         _state[sock] = NA_STATE;
         m_esc_state = ESC_IDLE;
         //m_is_server_run = false;
-	}
+    }
 }
 
 uint8_t WizFi310Drv::getServerState(uint8_t sock)
@@ -531,7 +531,7 @@ uint8_t WizFi310Drv::getServerState(uint8_t sock)
 ////////////////////////////////////////////////////////////////////////////
 uint16_t WizFi310Drv::availData()
 {
-	//uint8_t recved_byte;
+    //uint8_t recved_byte;
     int recved_byte;
     unsigned long startMillis;
 
@@ -545,7 +545,7 @@ uint16_t WizFi310Drv::availData()
         parsingData((uint8_t)recved_byte);
     } while(millis() - startMillis < 1000);
 
-	return ringBuf.available();
+    return ringBuf.available();
 }
 
 
@@ -569,32 +569,32 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         else if(recv_data == '[')
         {
-			m_esc_state = ESC_EVENT;
+            m_esc_state = ESC_EVENT;
         }
         break;
     case ESC_EVENT:
 //        LOGDEBUG("ESC_EVENT");
-		if( recv_data == 'D')
-		{
-			m_esc_state = ESC_EVENT_DISCONNECT;
-			tmp_evnt_idx = 2;
-		}
-		else if( recv_data == 'L')
-		{
-			m_esc_state = ESC_EVENT_LINKDOWN;
-			tmp_evnt_idx = 2;
-		}
-		else if( recv_data == 'C')
-		{
+        if( recv_data == 'D')
+        {
+            m_esc_state = ESC_EVENT_DISCONNECT;
+            tmp_evnt_idx = 2;
+        }
+        else if( recv_data == 'L')
+        {
+            m_esc_state = ESC_EVENT_LINKDOWN;
+            tmp_evnt_idx = 2;
+        }
+        else if( recv_data == 'C')
+        {
             m_esc_state = ESC_EVENT_CONNECT_CLIENT;
             tmp_evnt_idx = 2;
-		}
-		else
-		{
-		    m_esc_state = ESC_IDLE;
-			tmp_evnt_idx = 0;
-		}
-		break;
+        }
+        else
+        {
+            m_esc_state = ESC_IDLE;
+            tmp_evnt_idx = 0;
+        }
+        break;
     case ESC_CID:
 //        LOGDEBUG("ESC_CID");
         if( (recv_data >= '0') && (recv_data <= '9') )
@@ -603,11 +603,11 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         else if( recv_data == ',')
         {
-			m_esc_state = ESC_PEERIP;
+            m_esc_state = ESC_PEERIP;
         }
         else
         {
-			m_esc_state = ESC_IDLE;
+            m_esc_state = ESC_IDLE;
         }
         break;
     case ESC_PEERIP:
@@ -629,7 +629,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         else
         {
-			m_esc_state = ESC_IDLE;
+            m_esc_state = ESC_IDLE;
         }
         break;
     case ESC_PEERPORT:
@@ -641,7 +641,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         }
         else if(recv_data == ',')
         {
-			m_esc_state = ESC_LENGTH;
+            m_esc_state = ESC_LENGTH;
         }
         else m_esc_state = ESC_IDLE;
         break;
@@ -649,12 +649,12 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 //        LOGDEBUG("ESC_LENGTH");
         if((recv_data >= '0') && (recv_data <= '9'))
         {
-			m_recved_len *= 10;
-			m_recved_len += (uint16_t)(recv_data - '0');
+            m_recved_len *= 10;
+            m_recved_len += (uint16_t)(recv_data - '0');
         }
         else if(recv_data == '}')
         {
-			m_esc_state = ESC_RECV_DATA;
+            m_esc_state = ESC_RECV_DATA;
         }
         else m_esc_state = ESC_IDLE;
         break;
@@ -662,9 +662,9 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 //        LOGDEBUG("ESC_RECV_DATA");
 //        if( ringBuf.available() >= (CMD_BUFFER_SIZE - 50) )
 //        {
-//			LOGDEBUG2("ringBuf threshold is over", (char)recv_data, ringBuf.available() );
-//			m_recved_len--;
-//			break;
+//          LOGDEBUG2("ringBuf threshold is over", (char)recv_data, ringBuf.available() );
+//          m_recved_len--;
+//          break;
 //        }
 
         ringBuf.write(recv_data);
@@ -672,53 +672,53 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 
         if(m_recved_len <= 0)
         {
-			m_recved_len = 0;
+            m_recved_len = 0;
             m_esc_state = ESC_IDLE;
         }
         break;
     case ESC_EVENT_DISCONNECT:
-		if( tmp_evnt_idx == 12 && ( recv_data >= '0' && recv_data <= '8') )
-		{
-			_state[recv_data-'0'] = NA_STATE;
-			tmp_evnt_idx++;
-		}
-		else if( tmp_evnt_idx >= 13 && tmp_evnt_idx <= 15 )
-		{
-			tmp_evnt_idx++;
-		}
-		else if( (tmp_evnt_idx <= 11) && recv_data == WIZFI310EVNT[0][tmp_evnt_idx] )
-		{
-			tmp_evnt_idx++;
-		}
-		else
-		{
-			m_esc_state = ESC_IDLE;
-			tmp_evnt_idx = 0;
-		}
-		break;
+        if( tmp_evnt_idx == 12 && ( recv_data >= '0' && recv_data <= '8') )
+        {
+            _state[recv_data-'0'] = NA_STATE;
+            tmp_evnt_idx++;
+        }
+        else if( tmp_evnt_idx >= 13 && tmp_evnt_idx <= 15 )
+        {
+            tmp_evnt_idx++;
+        }
+        else if( (tmp_evnt_idx <= 11) && recv_data == WIZFI310EVNT[0][tmp_evnt_idx] )
+        {
+            tmp_evnt_idx++;
+        }
+        else
+        {
+            m_esc_state = ESC_IDLE;
+            tmp_evnt_idx = 0;
+        }
+        break;
     case ESC_EVENT_LINKDOWN:
-		if( tmp_evnt_idx > 18)
-		{
-			m_esc_state = ESC_IDLE;
-			tmp_evnt_idx = 0;
-			break;
-		}
+        if( tmp_evnt_idx > 18)
+        {
+            m_esc_state = ESC_IDLE;
+            tmp_evnt_idx = 0;
+            break;
+        }
 
-		if ( recv_data == WIZFI310EVNT[1][tmp_evnt_idx])
-		{
-			tmp_evnt_idx++;
-			if( tmp_evnt_idx > 18 )
-			{
-				m_esc_state = ESC_IDLE;
-				tmp_evnt_idx = 0;
-			}
-		}
-		else
-		{
-			m_esc_state = ESC_IDLE;
-			tmp_evnt_idx = 0;
-		}
-		break;
+        if ( recv_data == WIZFI310EVNT[1][tmp_evnt_idx])
+        {
+            tmp_evnt_idx++;
+            if( tmp_evnt_idx > 18 )
+            {
+                m_esc_state = ESC_IDLE;
+                tmp_evnt_idx = 0;
+            }
+        }
+        else
+        {
+            m_esc_state = ESC_IDLE;
+            tmp_evnt_idx = 0;
+        }
+        break;
     case ESC_EVENT_CONNECT_CLIENT:
         if( tmp_evnt_idx == 9 && ( recv_data >= '0' && recv_data <= '8') )
         {
@@ -752,17 +752,17 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
 
 bool WizFi310Drv::getData(uint8_t connId, uint8_t *data, bool peek, bool* connClose)
 {
-	int ch;
+    int ch;
 
-	long _startMillis = millis();
+    long _startMillis = millis();
     do
     {
         if( ringBuf.available() )
         {
-			ch = ringBuf.read();
-			if( ch == -1)	return false;
+            ch = ringBuf.read();
+            if( ch == -1)   return false;
 
-			*data = (uint8_t)ch;
+            *data = (uint8_t)ch;
             return true;
         }
     }while((millis() - _startMillis) < 2000);
@@ -781,16 +781,16 @@ int WizFi310Drv::getDataBuf(uint8_t connId, uint8_t *buf, uint16_t bufSize)
 
     for(i=0; i<bufSize; i++)
     {
-		recv_data = ringBuf.read();
-		if( recv_data > 0 )
-		{
-			buf[idx] = (uint8_t)recv_data;
-			idx++;
-		}
-		else
-		{
-			break;
-		}
+        recv_data = ringBuf.read();
+        if( recv_data > 0 )
+        {
+            buf[idx] = (uint8_t)recv_data;
+            idx++;
+        }
+        else
+        {
+            break;
+        }
     }
 
     buf[idx] = '\0';
@@ -805,7 +805,7 @@ bool WizFi310Drv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
 
     if( len > CMD_BUFFER_SIZE )
     {
-		LOGDEBUG(F("DBG>>>>Error : send-data-size if too big"));
+        LOGDEBUG(F("DBG>>>>Error : send-data-size if too big"));
         return false;
     }
 
@@ -817,16 +817,16 @@ bool WizFi310Drv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
 
     sprintf_P(cmdBuf, PSTR("[%d,,,%d]\r\n"), sock, len);
     ret = readUntil(1000,cmdBuf);
-    if(ret != 0)	return false;
+    if(ret != 0)    return false;
 
     for(i=0; i<(int)len; i++)
     {
-		WizFi310Serial->write(data[i]);
+        WizFi310Serial->write(data[i]);
     }
 
     ret = readUntil(1000);
     ringBuf.reset();
-    if(ret != 0)	return false;
+    if(ret != 0)    return false;
 
     return true;
 }
@@ -876,10 +876,10 @@ int WizFi310Drv::getResponse(char* outStr, int outStrLen, int lineNum)
 
 int WizFi310Drv::sendCmd(const __FlashStringHelper* cmd, int timeout, ...)
 {
-	char cmdBuf[CMD_BUFFER_SIZE];
+    char cmdBuf[CMD_BUFFER_SIZE];
 
-	va_list args;
-	va_start (args, timeout);
+    va_list args;
+    va_start (args, timeout);
 
 #ifdef __AVR__
     vsnprintf_P (cmdBuf, CMD_BUFFER_SIZE, (char*)cmd, args);
@@ -940,8 +940,8 @@ int WizFi310Drv::SendCmdWithTag(const char* cmd, const char* tag, const char* ta
 
 int WizFi310Drv::readUntil(int timeout, const char* tag, const char* tag2, const char* error)
 {
-	int ret = TAG_ERROR;
-	unsigned long start = millis();
+    int ret = TAG_ERROR;
+    unsigned long start = millis();
     uint8_t  recved_byte, is_found1=0, is_found2=0;
 
 //    if( m_esc_state != ESC_IDLE )
@@ -949,16 +949,16 @@ int WizFi310Drv::readUntil(int timeout, const char* tag, const char* tag2, const
 //        LOGDEBUG2("readUnitl","m_esc_state",m_esc_state);
 //        return TAG_ERROR;
 //    }
-	while( (millis() - start < (unsigned long)timeout) and ret < 0 )
-	{
-		if( WizFi310Serial->available() )
-		{
-			recved_byte = (char)WizFi310Serial->read();
-			ringBuf.push(recved_byte);
-			LOGDEBUG0((char)recved_byte);
-		}
-		else
-		{
+    while( (millis() - start < (unsigned long)timeout) and ret < 0 )
+    {
+        if( WizFi310Serial->available() )
+        {
+            recved_byte = (char)WizFi310Serial->read();
+            ringBuf.push(recved_byte);
+            LOGDEBUG0((char)recved_byte);
+        }
+        else
+        {
             if( is_found1 == 0 && ringBuf.FindStr(tag))
             {
                 is_found1 = 1;
@@ -969,9 +969,9 @@ int WizFi310Drv::readUntil(int timeout, const char* tag, const char* tag2, const
             }
             if( ringBuf.FindStr(error) )
             {
-				return TAG_ERROR;
+                return TAG_ERROR;
             }
-		}
+        }
 
         if ( is_found1 && is_found2 )
         {
