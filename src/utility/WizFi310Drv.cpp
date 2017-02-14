@@ -527,14 +527,19 @@ uint8_t WizFi310Drv::getServerState(uint8_t sock)
 ////////////////////////////////////////////////////////////////////////////
 uint16_t WizFi310Drv::availData()
 {
-	uint8_t recved_byte;
+	//uint8_t recved_byte;
+    int recved_byte;
+    unsigned long startMillis;
 
-	if( WizFi310Serial->available() )
-	{
-		recved_byte = (uint8_t)WizFi310Serial->read();
-		if (recved_byte < 0) return ringBuf.available();
-		parsingData(recved_byte);
-	}
+    startMillis = millis();
+    do {
+        recved_byte = WizFi310Serial->read();
+        if ( recved_byte < 0 )
+        {
+            return ringBuf.available();
+        }
+        parsingData((uint8_t)recved_byte);
+    } while(millis() - startMillis < 1000);
 
 	return ringBuf.available();
 }
