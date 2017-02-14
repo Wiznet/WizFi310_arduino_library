@@ -159,6 +159,7 @@ public:
     static int  getResponse		(char* outStr, int outStrLen, int lineNum);
     static int  sendCmd         (const __FlashStringHelper* cmd, int timeout=1000, ...);
     static int  SendCmdWithTag  (const __FlashStringHelper* cmd, const char* tag="[OK]", const char* tag2="", int timeout=10000, ...);
+    static int  SendCmdWithTag  (const char* cmd, const char* tag, const char* tag2, int timeout=10000);
     static bool sendCmdGet      (const char* cmd, const char* startTag, const char* endTag, char* outStr, int outStrLen, int opt);
     static bool sendCmdGet      (const __FlashStringHelper* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
     static bool sendCmdGet		(const char* cmd, const __FlashStringHelper* startTag, const __FlashStringHelper* endTag, char* outStr, int outStrLen, int opt=0);
