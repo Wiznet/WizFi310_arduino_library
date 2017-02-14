@@ -13,7 +13,20 @@ WiFiUDP::WiFiUDP() : _sock(NO_SOCKET_AVAIL)
 
 uint8_t WiFiUDP::begin(uint16_t port)
 {
-    _port = port;
+    uint8_t sock = WizFi310Drv::getFirstSocket();
+    if ( sock != NO_SOCKET_AVAIL )
+    {
+        if( WizFi310Drv::startUdpServer(sock, port) == false )
+        {
+            return 0;
+        }
+
+        _sock = sock;
+        _port = port;
+        WizFi310Drv::_state[_sock] = _sock;
+        WizFi310Drv::_localPort = _port;
+    }
+
     return 1;
 }
 
@@ -40,43 +53,35 @@ void WiFiUDP::stop()
 		return;
 
       WizFi310Drv::stopClient(_sock);  
+      WizFi310Drv::_state[_sock] = NA_STATE;
 	  _sock = NO_SOCKET_AVAIL;
 	  _remotePort = 0;
 	  _port = 0;
-	  WizFi310Drv::_state[_sock] = NA_STATE;
 }
 
 int WiFiUDP::beginPacket(const char *host, uint16_t port)
 {
     if (_sock != NO_SOCKET_AVAIL)
-        return 1;
-
-    _sock = WizFi310Drv::getFirstSocket();
-
-    if (_sock != NO_SOCKET_AVAIL)
     {
-        if( strcmp(host,"0.0.0.0") == 0 )
-        {
-            if( WizFi310Drv::startUdpServer(_sock, _port) == false )
-            {
-                return 0;
-            }
-        }
-        else
-        {
-            if( WizFi310Drv::startClient(host, port, _sock, UDP_MODE) == false )
-            {
-                return 0;
-            }
-            _remotePort = port;
-        }
-
-        WizFi310Drv::_state[_sock] = _sock;
-        strcpy(_remoteHost, host);
-        return 1;
+        //LOGDEBUG("socket is already used");
+        //LOGDEBUG1("_sock :",_sock);
+        stop();
     }
 
-    return 0;
+    uint8_t sock = WizFi310Drv::getFirstSocket();
+    if( WizFi310Drv::startClient(host, port, sock, UDP_MODE) == false )
+    {
+        return 0;
+    }
+
+    _sock = sock;
+    _remotePort = port;
+    WizFi310Drv::_state[_sock] = _sock;
+    strcpy(_remoteHost, host);
+
+    //LOGDEBUG1("_sock :",_sock);
+
+    return 1;
 }
 
 int WiFiUDP::beginPacket(IPAddress ip, uint16_t port)
@@ -110,7 +115,7 @@ size_t WiFiUDP::write(const uint8_t *buffer, size_t size)
     bool r = WizFi310Drv::sendData(_sock, buffer, size);
 	if (!r)
 	{
-		return 0;
+        return 0;
 	}
 
 	return size;

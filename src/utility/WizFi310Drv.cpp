@@ -433,9 +433,9 @@ bool WizFi310Drv::startUdpServer(uint8_t sock, uint16_t port)
 }
 
 
-bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uint8_t protMode)
+bool WizFi310Drv::startClient(const char* host, uint16_t remote_port, uint8_t sock, uint8_t protMode)
 {
-    LOGDEBUG2(F("> startClient"), host, port);
+    LOGDEBUG2(F("> startClient"), host, remote_port);
     int status=0;
     bool is_ip,ret=false;
     char host_ip[16]={0,};
@@ -464,17 +464,17 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
 
     if(protMode == TCP_MODE)
     {
-        status = SendCmdWithTag(F("AT+SCON=O,TCN,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,port);
+        status = SendCmdWithTag(F("AT+SCON=O,TCN,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,remote_port);
         ringBuf.reset();
     }
     else if(protMode == SSL_MODE)
     {
-        status = SendCmdWithTag(F("AT+SCON=O,TCS,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,port);
+        status = SendCmdWithTag(F("AT+SCON=O,TCS,%s,%d,,0\r"),resp_ok,resp_con,10000,host_ip,remote_port);
         ringBuf.reset();
     }
     else if(protMode == UDP_MODE)
     {
-        status = SendCmdWithTag(F("AT+SCON=O,UCN,%s,%d,%d,0\r"),resp_ok,"",10000,host_ip,port,_localPort);
+        status = SendCmdWithTag(F("AT+SCON=O,UCN,%s,%d,%d,0\r"),resp_ok,resp_con,10000,host_ip,remote_port,_localPort);
         ringBuf.reset();
     }
 
@@ -495,6 +495,8 @@ bool WizFi310Drv::startClient(const char* host, uint16_t port, uint8_t sock, uin
 void WizFi310Drv::stopClient(uint8_t sock)
 {
     char cmdBuf[50];
+    char resp_1[20];
+    bool ret=false;
 
 	if( _state[sock] == sock && ringBuf.available() )
         return;
@@ -509,13 +511,15 @@ void WizFi310Drv::stopClient(uint8_t sock)
      }
 
 	sprintf_P(cmdBuf, PSTR("AT+SMGMT=%d\r"),sock);
-	WizFi310Serial->print(cmdBuf);
-    if( readUntil(1000) == TAG_OK )
-    {
-		_state[sock] = NA_STATE;
-		m_esc_state = ESC_IDLE;
-		//m_is_server_run = false;
-    }
+	LOGDEBUG(cmdBuf);
+
+	sprintf_P(resp_1, PSTR("[DISCONNECT %d]\r\n"),sock);
+	if( SendCmdWithTag(cmdBuf,"[OK]\r\n",resp_1) == true )
+	{
+        _state[sock] = NA_STATE;
+        m_esc_state = ESC_IDLE;
+        //m_is_server_run = false;
+	}
 }
 
 uint8_t WizFi310Drv::getServerState(uint8_t sock)
@@ -808,6 +812,7 @@ bool WizFi310Drv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
     ringBuf.reset();
     char cmdBuf[100]={0};
     sprintf_P(cmdBuf, PSTR("AT+SSEND=%d,,,%d\r"), sock, len);
+    LOGDEBUG(cmdBuf);
     WizFi310Serial->print(cmdBuf);
 
     sprintf_P(cmdBuf, PSTR("[%d,,,%d]\r\n"), sock, len);
@@ -913,13 +918,18 @@ int WizFi310Drv::SendCmdWithTag(const __FlashStringHelper* cmd, const char* tag,
 
     va_end (args);
 
+    return SendCmdWithTag(cmdBuf, tag, tag2, timeout);
+}
+
+int WizFi310Drv::SendCmdWithTag(const char* cmd, const char* tag, const char* tag2, int timeout)
+{
     wizfiEmptyBuf(true);
     ringBuf.reset();
 
     LOGDEBUG(F("----------------------------------------------"));
-    LOGDEBUG1(F(">>"), cmdBuf);
+    LOGDEBUG1(F(">>"), cmd);
 
-    WizFi310Serial->print(cmdBuf);
+    WizFi310Serial->print(cmd);
     int idx = readUntil(timeout, tag, tag2);
 
     LOGDEBUG1(F("---------------------------------------------- >"), idx);
@@ -937,7 +947,6 @@ int WizFi310Drv::readUntil(int timeout, const char* tag, const char* tag2, const
 //    if( m_esc_state != ESC_IDLE )
 //    {
 //        LOGDEBUG2("readUnitl","m_esc_state",m_esc_state);
-//        Serial.println("\r\nTEST 200\r\n");
 //        return TAG_ERROR;
 //    }
 	while( (millis() - start < (unsigned long)timeout) and ret < 0 )

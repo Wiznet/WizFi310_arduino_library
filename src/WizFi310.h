@@ -33,9 +33,6 @@ along with The Arduino WiFiEsp library.  If not, see
 class WizFi310Class
 {
 public:
-
-    //static uint16_t _server_port[MAX_SOCK_NUM];
-
     WizFi310Class();
 
 
