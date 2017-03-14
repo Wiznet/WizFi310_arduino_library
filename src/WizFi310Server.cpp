@@ -12,20 +12,20 @@ WiFiServer::WiFiServer(uint16_t port)
 
 void WiFiServer::begin()
 {
-	LOGDEBUG(F("Starting server"));
+    LOGDEBUG(F("Starting server"));
 
-	m_client_sock = WizFi310Drv::startServer(m_port);
+    m_client_sock = WizFi310Drv::startServer(m_port);
 
-	if (m_client_sock != SOCK_NOT_AVAIL)
-	{
-	    m_started = true;
-	    LOGINFO1(F("Server started on port"), m_port);
-	    LOGINFO1(m_client_sock, F(" client will connect"));
-	}
-	else
-	{
-		LOGERROR(F("Server failed to start"));
-	}
+    if (m_client_sock != SOCK_NOT_AVAIL)
+    {
+        m_started = true;
+        LOGINFO1(F("Server started on port"), m_port);
+        LOGINFO1(m_client_sock, F(" client will connect"));
+    }
+    else
+    {
+        LOGERROR(F("Server failed to start"));
+    }
 }
 
 WiFiClient WiFiServer::available(byte* status)
@@ -55,7 +55,7 @@ size_t WiFiServer::write(uint8_t b)
 
 size_t WiFiServer::write(const uint8_t *buffer, size_t size)
 {
-	size_t n = 0;
+    size_t n = 0;
 
     for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
     {

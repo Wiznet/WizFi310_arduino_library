@@ -15,7 +15,7 @@
 // 3: INFO: errors, warnings and informational (default)
 // 4: DEBUG: errors, warnings, informational and debug
 
-#define _WizFiLOGLEVEL_ 4
+#define _WizFiLOGLEVEL_ 0
 
 #if defined(ARDUINO_ARCH_SAMD) 
 
