@@ -25,7 +25,7 @@ along with The Arduino WiFiEsp library.  If not, see
 #define NUM_WIZFI_TAGS TAG_NUM
 
 // maximum size of AT command
-#define CMD_BUFFER_SIZE 300
+#define CMD_BUFFER_SIZE 1024
 
 typedef enum
 {
@@ -501,25 +501,35 @@ void WizFi310Drv::stopClient(uint8_t sock)
     if( _state[sock] == sock && ringBuf.available() )
         return;
 
-    for(int i=0; i<5; i++)
-     {
-         if (sendCmd(F("AT\r"),1000) == TAG_OK)
-         {
-             break;
-         }
-         delay(100);
-     }
+    // Check socket
+    if (SendCmdWithTag("AT+SMGMT=?\r", "Number of Sockets : 0", "", 1000) == TAG_OK) {
+        _state[sock] = NA_STATE;
+        m_esc_state = ESC_IDLE;
+        ringBuf.reset();
+        LOGDEBUG(F("[socket stop debug] : There is no open socket"));
+        return;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        if (sendCmd(F("AT\r"), 1000) == TAG_OK) {
+            break;
+        }
+        delay(100);
+    }
 
     sprintf_P(cmdBuf, PSTR("AT+SMGMT=%d\r"),sock);
     LOGDEBUG(cmdBuf);
 
-    sprintf_P(resp_1, PSTR("[DISCONNECT %d]\r\n"),sock);
-    if( SendCmdWithTag(cmdBuf,"[OK]\r\n",resp_1) == true )
-    {
-        _state[sock] = NA_STATE;
-        m_esc_state = ESC_IDLE;
-        //m_is_server_run = false;
-    }
+    sprintf_P(resp_1, PSTR("[DISCONNECT %d]\r\n"), sock);
+//    if( SendCmdWithTag(cmdBuf,"[OK]\r\n",resp_1) == TAG_OK )
+//    {
+//        _state[sock] = NA_STATE;
+//        m_esc_state = ESC_IDLE;
+//        //m_is_server_run = false;
+//    }
+    SendCmdWithTag(cmdBuf, "[OK]\r\n", resp_1);
+    _state[sock] = NA_STATE;
+    m_esc_state = ESC_IDLE;
 }
 
 uint8_t WizFi310Drv::getServerState(uint8_t sock)
@@ -534,16 +544,25 @@ uint16_t WizFi310Drv::availData()
     //uint8_t recved_byte;
     int recved_byte;
     unsigned long startMillis;
+    int recv_cnt = 0;
 
     startMillis = millis();
     do {
         recved_byte = WizFi310Serial->read();
-        if ( recved_byte < 0 )
+        if (recved_byte < 0)
         {
             return ringBuf.available();
+        } 
+        else
+        {
+            parsingData((uint8_t) recved_byte);
+            if (ringBuf.isFull())
+            {
+                break;
+            }
+
         }
-        parsingData((uint8_t)recved_byte);
-    } while(millis() - startMillis < 1000);
+    } while (millis() - startMillis < 2000);
 
     return ringBuf.available();
 }
