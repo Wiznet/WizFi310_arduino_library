@@ -1,6 +1,6 @@
 # Wi-Fi Shield or [WizArduino MEGA WIFI](http://wizwiki.net/wiki/doku.php?id=osh:wizarduino_mega_wifi:start) from [Wiznet](http://www.wiznet.co.kr/)
 
-![](http://wizwiki.net/wiki/lib/exe/fetch.php?media=osh:wizarduino_mega_wifi:wizarduino_mega_wifi_o_ver1.0_pinout_170316.png)
+![](https://github.com/Wiznet/WizFi310_arduino_library/blob/master/images/WizArduino_Mega_Wifi.png?raw=true)
 
 ## Hardware
 You can find hardware document of WizArduino MEGA WIFI at [wizwiki.net](http://wizwiki.net/wiki/doku.php?id=osh:wizarduino_mega_wifi:start)
