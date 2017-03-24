@@ -1,26 +1,21 @@
-#include <Ethernet2.h>
-#include <SPI.h>
-#include <SoftwareSerial.h>
+#include <Arduino.h>
+#include "WizFi310.h"
+
+char ssid[] = "Network SSID";                //your network SSID
+char pass[] = "Network Password";               //your network password
+int  status = WL_IDLE_STATUS;           //the Wifi radio's status
 
 // Ubidots My Source Variable ID
-String TEST = "581acebd7625422cc55daf8d"; // TEST Variable ID
+String TEST = ""; // TEST Variable ID
 
 // Ubidots My token ID
-String token = "UCdf332BAQMfXfSJjbBovWePelFU3M"; // default token
+String token = "Your ubidots default token"; // default token
 
-// MAC address
-byte mac[] = {0x00, 0x08, 0xDC, 0x03, 0x04, 0x02};
-
-// 접속할 서버
+// Connect server
 char server[] = "things.ubidots.com";
 #define  REMOTE_PORT    80
 
-IPAddress ip(222,98,173, 193); // TCP/IP 네트워크에 있는 호스트를 식별하는 숫자
-IPAddress gateway(222,98,173, 254); // 다른 네트워크에 있는 호스트와 통신할 때 사용
-IPAddress subnet(255, 255, 255, 192); // 호스트가 로컬 or 원격 네트워크에 있는지 확인할 때 사용
-IPAddress myDns(8, 8, 8, 8); // google puble dns
-
-EthernetClient client;
+WiFiClient client;
 
 // getRequest String buffer
 String Stringbuffer = ""; 
@@ -28,19 +23,28 @@ String Stringbuffer = "";
 int TEST_pin = 13; // Arduino LED D13 pin
 
 void setup() {
-  SerialUSB.begin(9600);
+  Serial.begin(9600);
+  Serial3.begin(115200);
   
   delay(6000);
-  SerialUSB.print("Starting...");
-  if (Ethernet.begin(mac) == 0) { // 공유기 DHCP 사용
-    SerialUSB.println("Failed to configure Ethernet using DHCP");
-    // try to congifure using IP address instead of DHCP:
-    Ethernet.begin(mac, ip, myDns, gateway, subnet);
+  Serial.print("Starting...");
+  Serial.println("WiFi initiallize");
+  WiFi.init(&Serial3);
+  
+  if (WiFi.status() == 0) { 
+    Serial.println("Failed to configure WiFi");
+    // don't continue
+    while(true)
+    ;
   }
-  for (byte i = 0; i < 4 ; i++) {
-    SerialUSB.print(Ethernet.localIP()[i], DEC);
-    SerialUSB.print(".");
-  } 
+  //attempt to connect to WiFi network
+  while (status != WL_CONNECTED)
+  {
+    Serial.print("[WiFi] Attempting to connect to WPA SSID: ");
+    Serial.print(ssid);
+    //Connect to WPA/WPA2 network
+    status = WiFi.begin(ssid, pass);
+  }
   pinMode(TEST_pin, OUTPUT);
   digitalWrite(TEST_pin, LOW);
   delay(1000);
@@ -48,20 +52,19 @@ void setup() {
 
 void loop() {
   sendValue();
-  delay(2000);
+  delay(20000);
 }
 
 void sendValue(void)
 {
-  SerialUSB.println("Sensor value Sending...");
+  Serial.println("Sensor value Sending...");
   int bodySize = 0;
-  delay(2000);
+  delay(20000);
   
   String varString = "[{\"variable\": \"" + TEST +"\", \"value\":" + String(TEST_pin) + "}]";
-  //SerialUSB.print(varString);
+  Serial.print(varString);
   bodySize = varString.length();
-  delay(2000);
-  //SerialUSB.println("Connecting...");
+  delay(20000);
 
   if (client.connect(server, REMOTE_PORT))
   {
@@ -82,14 +85,14 @@ void sendValue(void)
   }
   else
   {
-    SerialUSB.println("connection failed");
+    Serial.println("connection failed");
   }
   while (!client.available());
-    //SerialUSB.println("Reading..");
+    //Serial3.println("Reading..");
   while (client.available())
   {
     char c = client.read();
-    SerialUSB.print(c); // Response Monitoring
+    Serial.print(c); // Response Monitoring
   }
   client.flush();
   client.stop();
