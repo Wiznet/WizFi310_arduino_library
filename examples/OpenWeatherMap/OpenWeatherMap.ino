@@ -1,10 +1,10 @@
 #include <WizFi310.h>
 
 
-#define API_key      "89d24811fb9cb01366050d7d1afd6a08"
+#define API_key      "API_key_value"  // your API key
 
-char ssid[] = "KEI_2G";       // your network SSID (name)
-char pass[] = "12345678";        // your network password
+char ssid[] = "Network_SSID";       // your network SSID (name)
+char pass[] = "Network_password";        // your network password
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 char server[] = "api.openweathermap.org"; //server address
