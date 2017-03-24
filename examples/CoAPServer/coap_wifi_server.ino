@@ -3,8 +3,8 @@
 #include <coap.h>
 
 
-char ssid[] = "WIZ_EK";       // your network SSID (name)
-char pass[] = "wiznet218";        // your network password
+char ssid[] = "Network_SSID";       // your network SSID (name)
+char pass[] = "Network_password";        // your network password
 int status = WL_IDLE_STATUS;       // the Wifi radio's status
 
 
