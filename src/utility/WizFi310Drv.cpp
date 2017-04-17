@@ -174,6 +174,22 @@ void WizFi310Drv::config(void)
 
 uint8_t* WizFi310Drv::getMacAddress()
 {
+    char buff[CMD_BUFFER_SIZE];
+    char *token;
+
+    memset(_mac, 0, WL_MAC_ADDR_LENGTH);
+    sendCmd(F("AT+MMAC=?\r"));
+    if( getResponse(buff, sizeof(buff), 1) > 0)
+    {
+        token = strtok(buff, ":");  _mac[0] = (byte)strtol(token, NULL, 16);
+        token = strtok(NULL, ":");  _mac[1] = (byte)strtol(token, NULL, 16);
+        token = strtok(NULL, ":");  _mac[2] = (byte)strtol(token, NULL, 16);
+        token = strtok(NULL, ":");  _mac[3] = (byte)strtol(token, NULL, 16);
+        token = strtok(NULL, ":");  _mac[4] = (byte)strtol(token, NULL, 16);
+        token = strtok(NULL, ":");  _mac[5] = (byte)strtol(token, NULL, 16);
+    }
+
+    return _mac;
 }
 
 void WizFi310Drv::getIpAddress(IPAddress &ip)
