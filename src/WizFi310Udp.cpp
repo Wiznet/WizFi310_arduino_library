@@ -2,7 +2,7 @@
 #include "WizFi310Udp.h"
 
 #include "utility/WizFi310Drv.h"
-#include "utility/Debug.h"
+#include "utility/debug.h"
 
 /* Constructor */
 WiFiUDP::WiFiUDP() : _sock(NO_SOCKET_AVAIL)

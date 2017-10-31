@@ -7,7 +7,7 @@
 #include "WizFi310Client.h"
 
 #include "utility/WizFi310Drv.h"
-#include "utility/Debug.h"
+#include "utility/debug.h"
 
 WiFiClient::WiFiClient() : _sock(255)
 {
