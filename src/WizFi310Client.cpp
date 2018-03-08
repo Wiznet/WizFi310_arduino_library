@@ -107,15 +107,8 @@ int WiFiClient::read()
     if (!available())
         return -1;
 
-    bool connClose = false;
-    if( WizFi310Drv::getData(_sock, &b, false, &connClose) == false )
+    if( WizFi310Drv::getData(_sock, &b) == false )
         return -1;
-
-    if (connClose)
-    {
-        WizFi310Drv::_state[_sock] = NA_STATE;
-        _sock = 255;
-    }
 
     return b;
 }
@@ -133,13 +126,8 @@ int WiFiClient::peek()
     if (!available())
         return -1;
 
-    bool connClose = false;
-    WizFi310Drv::getData(_sock, &b, true, &connClose);
-
-    if (connClose)
-    {
-        WizFi310Drv::_state[_sock] = NA_STATE;
-        _sock = 255;
+    while (available()){
+        WizFi310Drv::getData(_sock, &b);
     }
 
     return b;
@@ -157,6 +145,7 @@ void WiFiClient::stop()
         return;
 
     LOGINFO1(F("Disconnecting "), _sock);
+    peek();
 
     WizFi310Drv::stopClient(_sock);
 

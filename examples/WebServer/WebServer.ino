@@ -92,6 +92,7 @@ void loop()
 
     // close the connection:
     client.stop();
+    server.closeAllClientSocket();
     Serial.println("Client disconnected");
   }
 }

@@ -518,7 +518,7 @@ void WizFi310Drv::stopClient(uint8_t sock)
         return;
 
     // Check socket
-    if (SendCmdWithTag("AT+SMGMT=?\r", "Number of Sockets : 0", "", 1000) == TAG_OK) {
+    if (SendCmdWithTag("AT+SMGMT=?\r", "Number of Sockets : 0", "[OK]\r\n", 1000) == TAG_OK) {
         _state[sock] = NA_STATE;
         m_esc_state = ESC_IDLE;
         ringBuf.reset();
@@ -694,14 +694,14 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
         else m_esc_state = ESC_IDLE;
         break;
     case ESC_RECV_DATA:
-//        LOGDEBUG("ESC_RECV_DATA");
-//        if( ringBuf.available() >= (CMD_BUFFER_SIZE - 50) )
-//        {
-//          LOGDEBUG2("ringBuf threshold is over", (char)recv_data, ringBuf.available() );
-//          m_recved_len--;
-//          break;
-//        }
-
+        // For Debug
+        //LOGDEBUG("ESC_RECV_DATA");
+        //if( ringBuf.available() >= (CMD_BUFFER_SIZE - 50) )
+        //{
+        //  LOGDEBUG2("ringBuf threshold is over", (char)recv_data, ringBuf.available() );
+        //  m_recved_len--;
+        //  break;
+        //}
         ringBuf.write(recv_data);
         m_recved_len--;
 
@@ -785,7 +785,7 @@ void WizFi310Drv::parsingData(uint8_t recv_data)
     }
 }
 
-bool WizFi310Drv::getData(uint8_t connId, uint8_t *data, bool peek, bool* connClose)
+bool WizFi310Drv::getData(uint8_t connId, uint8_t *data)
 {
     int ch;
 
@@ -966,6 +966,8 @@ int WizFi310Drv::SendCmdWithTag(const char* cmd, const char* tag, const char* ta
 
     WizFi310Serial->print(cmd);
     int idx = readUntil(timeout, tag, tag2);
+    // kaizen 20180308 For remove AT command response
+    ringBuf.reset();
 
     LOGDEBUG1(F("---------------------------------------------- >"), idx);
     LOGDEBUG();
@@ -1039,6 +1041,37 @@ void WizFi310Drv::wizfiEmptyBuf(bool warn)
     {
         LOGDEBUG(F(""));
         LOGDEBUG1(F("Dirty characters in the serial buffer! >"), i);
+    }
+}
+
+
+void WizFi310Drv::closeAllClientSocket()
+{
+    char buff[CMD_BUFFER_SIZE];
+    char *token;
+    int  sock_cnt=0;
+    int  server_sock[MAX_SOCK_NUM]= { NA_STATE, NA_STATE, NA_STATE, NA_STATE,
+                                      NA_STATE, NA_STATE, NA_STATE, NA_STATE };
+
+    sendCmd(F("AT+SMGMT=?\r"));
+    // Number of Sockets : 1 (SCID/Mode/Remote/Local/DataMode)
+    getResponse(buff,CMD_BUFFER_SIZE, 1);
+    token = strtok(buff, ":");
+    token = strtok(NULL, "(");
+    sock_cnt = atoi(token);
+
+    for(int i=0; i<sock_cnt; i++){
+        getResponse(buff,CMD_BUFFER_SIZE, 1);
+        if( strstr(buff,"TSN") > 0 ){
+            token = strtok(buff,"/");
+            server_sock[i] = atoi(token);
+        }
+    }
+
+    for(int i=0; i<sock_cnt; i++){
+        if(server_sock[i] == NA_STATE){
+            stopClient(i);
+        }
     }
 }
 

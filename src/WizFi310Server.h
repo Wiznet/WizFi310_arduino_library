@@ -32,6 +32,7 @@ public:
     uint8_t status();
 
     uint8_t getFirstSocket();
+    uint8_t closeAllClientSocket();
 
     using Print::write;
 

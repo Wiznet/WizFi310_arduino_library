@@ -132,8 +132,7 @@ int WiFiUDP::read()
     if (!available())
         return -1;
 
-    bool connClose = false;
-    WizFi310Drv::getData(_sock, &b, false, &connClose);
+    WizFi310Drv::getData(_sock, &b);
 
     return b;
 }
@@ -156,7 +155,11 @@ int WiFiUDP::peek()
 {
   uint8_t b;
   if (!available())
-    return -1;
+      return -1;
+
+  while (available()){
+      WizFi310Drv::getData(_sock, &b);
+  }
 
   return b;
 }

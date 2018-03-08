@@ -80,3 +80,8 @@ uint8_t WiFiServer::getFirstSocket()
     }
     return SOCK_NOT_AVAIL;
 }
+
+uint8_t WiFiServer::closeAllClientSocket()
+{
+    WizFi310Drv::closeAllClientSocket();
+}

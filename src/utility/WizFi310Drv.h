@@ -128,7 +128,7 @@ private:
     ////////////////////////////////////////////////////////////////////////////
     static uint16_t availData  ();
     static void     parsingData(uint8_t recv_data);
-    static bool     getData    (uint8_t connId, uint8_t *data, bool peek, bool* connClose);
+    static bool     getData    (uint8_t connId, uint8_t *data);
     static int      getDataBuf (uint8_t connId, uint8_t *buf, uint16_t bufSize);
     static bool     sendData   (uint8_t sock, const uint8_t *data, uint16_t len);
     static bool     sendData   (uint8_t sock, const __FlashStringHelper *data, uint16_t len, bool appendCrLf=false);
@@ -136,6 +136,9 @@ private:
     static void     getRemoteIpAddress (IPAddress& ip);
     static uint16_t getRemotePort();
     static uint8_t  getFirstSocket();
+
+    static void      closeAllClientSocket();
+
 
     static Stream *WizFi310Serial;
 
